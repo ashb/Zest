@@ -10,6 +10,7 @@
 
 using namespace flusspferd;
 using namespace juice;
+namespace httpd = http::server;
 
 FLUSSPFERD_LOADER_SIMPLE(exports) {
   load_class<zest>(exports);
@@ -31,9 +32,10 @@ zest::zest(object const &self, call_context &x)
 
   opts = x.arg[0].get_object();
 
-  if (!opts.has_property("docRoot"))
-    throw exception("juice.Zest require a docRoot option", "TypeError");
-  docroot = opts.get_property("docRoot").to_std_string();
+  value v;
+  if (!(v = opts.get_property("handler")).is_function())
+    throw exception("juice.Zest requires a function as the handler option", "TypeError");
+  function cb = v.get_object();
 
   if (opts.has_property("port"))
     port = opts.get_property("port").to_std_string();
@@ -45,7 +47,8 @@ zest::zest(object const &self, call_context &x)
   else
     addr = "0.0.0.0";
 
-  _server.reset(new http::server::server(addr,port,docroot));
+  _req_handler.reset(new jsgi_request_handler(cb));
+  _server.reset(new http::server::server(addr,port,*_req_handler));
 }
 
 zest::~zest() {
@@ -55,10 +58,20 @@ zest::~zest() {
 }
 
 void zest::start() {
+  // Root the zest object to make sure it doesn't get GC'd
   root_object rooted_server(this->get_object());
   _server->run();
 }
 
 void zest::stop() {
   _server->stop();
+}
+
+jsgi_request_handler::jsgi_request_handler(function &cb_)
+  : cb(cb_)
+{ }
+
+void jsgi_request_handler::handle_request(const httpd::request &req, httpd::reply &rep)
+{
+  cb.call();
 }

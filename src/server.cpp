@@ -3,6 +3,7 @@
 // ~~~~~~~~~~
 //
 // Copyright (c) 2003-2008 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Modified by Ash Belrin, 2009
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -15,13 +16,13 @@ namespace http {
 namespace server {
 
 server::server(const std::string& address, const std::string& port,
-    const std::string& doc_root)
-  : io_service_(),
+    request_handler& handler)
+  : request_handler_(handler),
+    io_service_(),
     acceptor_(io_service_),
     connection_manager_(),
     new_connection_(new connection(io_service_,
-          connection_manager_, request_handler_)),
-    request_handler_(doc_root)
+          connection_manager_, request_handler_))
 {
   // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
   boost::asio::ip::tcp::resolver resolver(io_service_);

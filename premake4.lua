@@ -3,6 +3,8 @@ solution "Zest"
   targetdir "build"
 
   configurations { "Release" }
+
+  flags { "ExtraWarnings" }
   
   project "libzest"
     targetname "zest"

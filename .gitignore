@@ -1,4 +1,6 @@
-build/*
+/build
+/obj
 *.swp
 *~
-libzest.*
+/Makefile
+/*.make

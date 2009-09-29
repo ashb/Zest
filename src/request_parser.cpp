@@ -75,9 +75,29 @@ boost::tribool request_parser::consume(request& req, char input)
     {
       return false;
     }
+    else if (input == '?')
+    {
+      state_ = query_string;
+      return boost::indeterminate;
+    }
     else
     {
       req.uri.push_back(input);
+      return boost::indeterminate;
+    }
+  case query_string:
+    if (input == ' ')
+    {
+      state_ = http_version_h;
+      return boost::indeterminate;
+    }
+    else if (is_ctl(input))
+    {
+      return false;
+    }
+    else
+    {
+      req.query_string.push_back(input);
       return boost::indeterminate;
     }
   case http_version_h:

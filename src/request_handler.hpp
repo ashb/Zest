@@ -25,6 +25,7 @@ class request_handler
   : private boost::noncopyable
 {
 public:
+  virtual ~request_handler() {}
 
   /// Handle a request and produce a reply.
   virtual void handle_request(const request& req, reply& rep) = 0;

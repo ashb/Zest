@@ -6,11 +6,17 @@
  *
  */
 #include "zest.hpp"
+#include <boost/foreach.hpp>
+#include <boost/spirit/home/phoenix/core.hpp>
+#include <boost/spirit/home/phoenix/bind.hpp>
+#include <boost/spirit/home/phoenix/bind.hpp>
 #include <string>
 
 using namespace flusspferd;
 using namespace juice;
 namespace httpd = http::server;
+namespace phoenix = boost::phoenix;
+namespace args = phoenix::arg_names;
 
 FLUSSPFERD_LOADER_SIMPLE(exports) {
   load_class<zest>(exports);
@@ -35,7 +41,8 @@ zest::zest(object const &self, call_context &x)
   value v;
   if (!(v = opts.get_property("handler")).is_function())
     throw exception("juice.Zest requires a function as the handler option", "TypeError");
-  function cb = v.get_object();
+
+  _handler_cb = v.get_object();
 
   if (opts.has_property("port"))
     port = opts.get_property("port").to_std_string();
@@ -47,7 +54,7 @@ zest::zest(object const &self, call_context &x)
   else
     addr = "0.0.0.0";
 
-  _req_handler.reset(new jsgi_request_handler(cb));
+  _req_handler.reset(new jsgi_request_handler(*this));
   _server.reset(new http::server::server(addr,port,*_req_handler));
 }
 
@@ -60,6 +67,7 @@ zest::~zest() {
 void zest::start() {
   // Root the zest object to make sure it doesn't get GC'd
   root_object rooted_server(this->get_object());
+  std::cerr << "Starting" << std::endl;
   _server->run();
 }
 
@@ -67,11 +75,86 @@ void zest::stop() {
   _server->stop();
 }
 
-jsgi_request_handler::jsgi_request_handler(function &cb_)
-  : cb(cb_)
-{ }
+void zest::trace(tracer &trc) {
+  trc("zest.handler callback", _handler_cb);
+}
+
+jsgi_request_handler::jsgi_request_handler(zest &server)
+  : _server(server)
+{ 
+}
 
 void jsgi_request_handler::handle_request(const httpd::request &req, httpd::reply &rep)
 {
-  cb.call();
+  // Turn the req into the JSGI env.
+  object env;
+
+  {
+    local_root_scope scope;
+
+    env = create_object();
+
+    // env.jsgi
+    object jsgi = create_object();
+    array ver = create_array();
+    ver.call("push", 0,3,0);
+    jsgi.set_property("version", ver);
+
+    env.set_property("jsgi", jsgi);
+
+    env.set_property("requestMethod", req.method);
+    env.set_property("scriptName", "");
+    env.set_property("pathInfo", req.uri);
+    env.set_property("queryString", req.query_string);
+    //env.set_property("protocol", req.
+
+    // env.headers
+    object headers = create_object();
+
+    BOOST_FOREACH(http::server::header h, req.headers) {
+      string hdr_str;
+      if (headers.has_own_property(h.name)) {
+        // already exists, combined as specified by RFC XXX
+        hdr_str = string::concat(
+            string::concat(
+              headers.get_property(h.name),
+              ", "
+            ),
+            h.value
+        );
+      }
+      else {
+        hdr_str = h.value;
+      }
+      headers.set_property(h.name, hdr_str);
+    }
+
+    env.set_property("headers", headers);
+  }
+
+  std::cerr << "invoking handler" << std::endl;
+  // Root it! Make sure it doesn't get GC'd when we are sending, cos that would
+  // be really bad
+  root_value const &v = _server._handler_cb.call(_server, env);
+
+  if (v.is_undefined_or_null() || !v.is_object()) {
+    std::cerr << "no res or res is not an object" << std::endl;
+    rep = http::server::reply::stock_reply(http::server::reply::internal_server_error);
+    return;
+  }
+  std::cerr << "getting body" << std::endl;
+  root_object body(v.to_object().get_property_object("body"));
+
+  // Create a callback closure
+  root_function body_writer(create_native_function(
+    object(),
+    "Zest.writeChunk",
+    boost::function<void (value)>(
+      phoenix::bind(&http::server::reply::body_appender, rep, args::arg1)
+    )
+  ));
+
+  rep.status = http::server::reply::ok;
+  std::cerr << "calling body.forEach" << std::endl;
+  body.call("forEach", body_writer);
 }

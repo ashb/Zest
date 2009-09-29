@@ -9,8 +9,11 @@
 //
 
 #include "reply.hpp"
+#include <iostream>
 #include <string>
 #include <boost/lexical_cast.hpp>
+
+using namespace flusspferd;
 
 namespace http {
 namespace server {
@@ -250,6 +253,11 @@ reply reply::stock_reply(reply::status_type status)
   rep.headers[1].name = "Content-Type";
   rep.headers[1].value = "text/html";
   return rep;
+}
+
+void reply::body_appender(value &v) {
+  content = v.to_std_string();
+  std::cerr << "body_appender" << std::endl;
 }
 
 } // namespace server

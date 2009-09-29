@@ -14,6 +14,7 @@
 #include <string>
 #include <vector>
 #include <boost/asio.hpp>
+#include <flusspferd.hpp>
 #include "header.hpp"
 
 namespace http {
@@ -56,6 +57,8 @@ struct reply
 
   /// Get a stock reply.
   static reply stock_reply(status_type status);
+
+  void body_appender(flusspferd::value &v);
 };
 
 } // namespace server

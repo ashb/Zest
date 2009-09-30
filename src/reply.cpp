@@ -275,7 +275,6 @@ void reply::body_appender(value &v) {
 
   binary::vector_type const &vec = b->get_const_data();
   content.append(vec.begin(), vec.end());
-  std::cerr << "body_appender " << vec.size() << std::endl;
 }
 
 } // namespace server

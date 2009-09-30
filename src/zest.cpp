@@ -121,11 +121,11 @@ void jsgi_request_handler::handle_request(const httpd::request &req, httpd::repl
     BOOST_FOREACH(http::server::header h, req.headers) {
       string hdr_str;
       if (headers.has_own_property(h.name)) {
-        // already exists, combined as specified by RFC XXX
+        // already exists, combined as specified by RFC 2616
         hdr_str = string::concat(
             string::concat(
               headers.get_property(h.name),
-              ", "
+              ","
             ),
             h.value
         );

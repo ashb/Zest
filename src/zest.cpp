@@ -132,20 +132,17 @@ void jsgi_request_handler::handle_request(const httpd::request &req, httpd::repl
     env.set_property("headers", headers);
   }
 
-  std::cerr << "invoking handler" << std::endl;
   // Root it! Make sure it doesn't get GC'd when we are sending, cos that would
   // be really bad
-  root_value const &v = _server._handler_cb.call(_server, env);
+  root_value const &rv = _server._handler_cb.call(_server, env);
 
-  if (v.is_undefined_or_null() || !v.is_object()) {
+  if (rv.is_undefined_or_null() || !rv.is_object()) {
     std::cerr << "no res or res is not an object" << std::endl;
     rep = http::server::reply::stock_reply(http::server::reply::internal_server_error);
     return;
   }
-  std::cerr << "getting body" << std::endl;
-  root_object body(v.to_object().get_property_object("body"));
 
-  // Create a callback closure
+  // Create a callback closure to pass to forEach
   root_function body_writer(create_native_function(
     object(),
     "Zest.writeChunk",

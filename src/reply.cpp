@@ -12,6 +12,7 @@
 #include <iostream>
 #include <string>
 #include <boost/lexical_cast.hpp>
+#include <flusspferd.hpp>
 
 using namespace flusspferd;
 
@@ -256,8 +257,25 @@ reply reply::stock_reply(reply::status_type status)
 }
 
 void reply::body_appender(value &v) {
-  content = v.to_std_string();
-  std::cerr << "body_appender" << std::endl;
+  binary *b;
+  if (v.is_object()) {
+    object chunk = v.get_object();
+
+    if (is_native<binary>(chunk)) {
+      // Good - we got a binary chunk.
+      b = &get_native<binary>(v.get_object());
+    }
+  }
+  else {
+    // Its not binary data, so um er, convert it's string rep to UTF8
+    // TODO: Default charset shouldn't be hardcoded as utf8
+    object o = flusspferd::encodings::convert_from_string("UTF-8", v.to_string());
+    b = &get_native<binary>(o);
+  }
+
+  binary::vector_type const &vec = b->get_const_data();
+  content.append(vec.begin(), vec.end());
+  std::cerr << "body_appender " << vec.size() << std::endl;
 }
 
 } // namespace server

@@ -81,7 +81,7 @@ void zest::trace(tracer &trc) {
 
 jsgi_request_handler::jsgi_request_handler(zest &server)
   : _server(server)
-{ 
+{
 }
 
 void jsgi_request_handler::handle_request(const httpd::request &req, httpd::reply &rep)
@@ -96,11 +96,18 @@ void jsgi_request_handler::handle_request(const httpd::request &req, httpd::repl
 
     // env.jsgi
     object jsgi = create_object();
+    env.set_property("jsgi", jsgi);
+
     array ver = create_array();
     ver.call("push", 0,3,0);
     jsgi.set_property("version", ver);
 
-    env.set_property("jsgi", jsgi);
+    jsgi.set_property(
+      "errors",
+      global().call("require", "system")
+              .to_object()
+              .get_property("stderr")
+    );
 
     env.set_property("requestMethod", req.method);
     env.set_property("scriptName", "");

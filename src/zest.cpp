@@ -142,6 +142,20 @@ void jsgi_request_handler::handle_request(const httpd::request &req, httpd::repl
     return;
   }
 
+  object jsgi_res = rv.to_object();
+  object body = jsgi_res.get_property_object("body");
+
+  value v = jsgi_res.get_property("status");
+  int status;
+
+  if (!v.is_int() || (status = v.get_int())  < 100) {
+    std::cerr << "res.status is not a valid HTTP status code" << std::endl;
+    rep = http::server::reply::stock_reply(http::server::reply::internal_server_error);
+    return;
+  }
+
+  rep.status = http::server::reply::status_type(status);
+
   // Create a callback closure to pass to forEach
   root_function body_writer(create_native_function(
     object(),
@@ -151,7 +165,5 @@ void jsgi_request_handler::handle_request(const httpd::request &req, httpd::repl
     )
   ));
 
-  rep.status = http::server::reply::ok;
-  std::cerr << "calling body.forEach" << std::endl;
   body.call("forEach", body_writer);
 }

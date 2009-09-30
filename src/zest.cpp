@@ -163,6 +163,17 @@ void jsgi_request_handler::handle_request(const httpd::request &req, httpd::repl
 
   rep.status = http::server::reply::status_type(status);
 
+  // Populate headers
+  object const &hdrs = jsgi_res.get_property_object("headers");
+
+  bool content_length_found = false;
+  for ( property_iterator iter = hdrs.begin(), end = hdrs.end(); iter != end; ++iter) {
+    http::server::header h;
+    h.name = iter->to_std_string();
+    h.value = hdrs.get_property(*iter).to_std_string();
+    rep.headers.push_back(h);
+  }
+
   // Create a callback closure to pass to forEach
   root_function body_writer(create_native_function(
     object(),

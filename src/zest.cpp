@@ -6,10 +6,14 @@
  *
  */
 #include "zest.hpp"
+#include "mime_types.hpp"
 #include <boost/foreach.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/spirit/home/phoenix/core.hpp>
 #include <boost/spirit/home/phoenix/bind.hpp>
 #include <string>
+#include <fstream>
 
 using namespace flusspferd;
 using namespace juice;
@@ -155,7 +159,6 @@ void jsgi_request_handler::handle_request(
   // Turn the req into the JSGI env.
   object env = build_jsgi_env(req, conn);
 
-
   // Root it! Make sure it doesn't get GC'd when we are sending, cos that would
   // be really bad
   root_value const &rv = _server._handler_cb.call(_server, env);
@@ -181,13 +184,35 @@ void jsgi_request_handler::handle_request(
   rep.status = http::server::reply::status_type(status);
 
   // Populate headers
-  object const &hdrs = jsgi_res.get_property_object("headers");
+  object hdrs = jsgi_res.get_property_object("headers");
 
+  bool send_file = false;
+  std::string x_sendfile;
+  if (( send_file = hdrs.has_property("x-sendfile")) == true) {
+    x_sendfile = hdrs.get_property("x-sendfile").to_std_string();
+    hdrs.delete_property("x-sendfile");
+  }
+
+  bool content_type_set = false;
   for ( property_iterator iter = hdrs.begin(), end = hdrs.end(); iter != end; ++iter) {
     http::server::header h;
     h.name = iter->to_std_string();
+
+    // If using X-SendFile, ignore any content length headers
+    if (send_file && boost::to_lower_copy(h.name) == "content-length")
+      continue;
+    // If using X-SendFile, use Content-Type if provided
+    if (send_file && boost::to_lower_copy(h.name) == "content-type")
+      content_type_set = true;
+
     h.value = hdrs.get_property(*iter).to_std_string();
     rep.headers.push_back(h);
+  }
+
+  // If X-SendFile, ignore body.
+  if (send_file) {
+    serve_file(rep, x_sendfile, !content_type_set);
+    return;
   }
 
   // Create a callback closure to pass to forEach
@@ -200,4 +225,39 @@ void jsgi_request_handler::handle_request(
   ));
 
   body.call("forEach", body_writer);
+}
+
+
+void jsgi_request_handler::serve_file(http::server::reply &rep,
+                  std::string const &fname, bool add_content_type) {
+
+  std::ifstream is(fname.c_str(), std::ios::in | std::ios::binary);
+  if (!is)
+  {
+    rep = httpd::reply::stock_reply(httpd::reply::not_found);
+    return;
+  }
+
+  char buf[512];
+  while (is.read(buf, sizeof(buf)).gcount() > 0)
+    rep.content.append(buf, is.gcount());
+  httpd::header h;
+  h.name = "Content-Length";
+  h.value = boost::lexical_cast<std::string>(rep.content.size());
+  rep.headers.push_back(h);
+  if (add_content_type) {
+
+    std::string extension;
+    // Determine the file extension.
+    std::size_t last_slash_pos = fname.find_last_of("/");
+    std::size_t last_dot_pos = fname.find_last_of(".");
+    if (last_dot_pos != std::string::npos && last_dot_pos > last_slash_pos)
+    {
+      extension = fname.substr(last_dot_pos + 1);
+    }
+
+    h.name = "Content-Type";
+    h.value = httpd::mime_types::extension_to_type(extension);
+    rep.headers.push_back(h);
+  }
 }

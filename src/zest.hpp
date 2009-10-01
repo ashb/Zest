@@ -53,6 +53,9 @@ protected:
   zest &_server;
   flusspferd::object build_jsgi_env(const http::server::request &req,
                         http::server::connection &conn);
+
+  void serve_file(http::server::reply &rep, std::string const &fname,
+                  bool add_content_type);
 public:
   explicit jsgi_request_handler(zest &server);
 

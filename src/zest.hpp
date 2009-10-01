@@ -38,6 +38,8 @@ private:
   server_ptr_t _server;
   request_handler_t _req_handler;
   flusspferd::function _handler_cb;
+
+  int _port;
 public:
   zest(flusspferd::object const &self, flusspferd::call_context &x);
   virtual ~zest();

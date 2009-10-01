@@ -28,7 +28,7 @@ FLUSSPFERD_LOADER_SIMPLE(exports) {
 zest::zest(object const &self, call_context &x)
   : base_type(self)
 {
-  std::string addr, port, docroot;
+  std::string addr, port;
 
   object opts;
   if (x.arg.size() < 1 ||
@@ -51,6 +51,7 @@ zest::zest(object const &self, call_context &x)
     port = opts.get_property("port").to_std_string();
   else
     port = "3000";
+  _port = boost::lexical_cast<int>(port);
 
   if (opts.has_property("address"))
     addr = opts.get_property("address").to_std_string();
@@ -112,6 +113,8 @@ object jsgi_request_handler::build_jsgi_env(
   env.set_property("scriptName", "");
   env.set_property("pathInfo", req.uri);
   env.set_property("queryString", req.query_string);
+  env.set_property("scheme", "http");
+
 
   object body = create_object();
   env.set_property("body", body);
@@ -128,9 +131,25 @@ object jsgi_request_handler::build_jsgi_env(
 
   // env.headers
   object headers = create_object();
+  bool host_seen = false;
 
   BOOST_FOREACH(http::server::header h, req.headers) {
     string hdr_str;
+
+    boost::to_lower(h.name);
+    if (h.name == "content-length") {
+      host_seen = true;
+      std::size_t last_pos = h.value.find_last_of(":");
+      if (last_pos != std::string::npos) {
+        env.set_property("serverName", h.value.substr(0, last_pos-1));
+        env.set_property("serverPort", h.value.substr(last_pos+1));
+      }
+      else {
+        env.set_property("serverName", h.value);
+        env.set_property("serverPort", "");
+      }
+    }
+
     if (headers.has_own_property(h.name)) {
       // already exists, combined as specified by RFC 2616
       hdr_str = string::concat(
@@ -148,6 +167,13 @@ object jsgi_request_handler::build_jsgi_env(
   }
 
   env.set_property("headers", headers);
+
+  if (!host_seen) {
+    // TODO: This is very wrong
+    env.set_property("serverName", "localhost");
+    env.set_property("serverPort", _server._port);
+  }
+
 
   return env;
 }

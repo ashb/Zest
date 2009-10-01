@@ -9,7 +9,6 @@
 #include <boost/foreach.hpp>
 #include <boost/spirit/home/phoenix/core.hpp>
 #include <boost/spirit/home/phoenix/bind.hpp>
-#include <boost/spirit/home/phoenix/bind.hpp>
 #include <string>
 
 using namespace flusspferd;

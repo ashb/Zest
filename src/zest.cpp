@@ -161,70 +161,95 @@ void jsgi_request_handler::handle_request(
 
   // Root it! Make sure it doesn't get GC'd when we are sending, cos that would
   // be really bad
-  root_value const &rv = _server._handler_cb.call(_server, env);
+  try {
+    root_value const &rv = _server._handler_cb.call(_server, env);
 
-  if (rv.is_undefined_or_null() || !rv.is_object()) {
-    std::cerr << "no res or res is not an object" << std::endl;
-    rep = http::server::reply::stock_reply(http::server::reply::internal_server_error);
+    if (rv.is_undefined_or_null() || !rv.is_object()) {
+      std::cerr << "no res or res is not an object" << std::endl;
+      rep = http::server::reply::stock_reply(http::server::reply::internal_server_error);
+      return;
+    }
+
+    object jsgi_res = rv.to_object();
+
+    value v = jsgi_res.get_property("status");
+    int status;
+
+    if (!v.is_int() || (status = v.get_int())  < 100) {
+      std::cerr << "res.status is not a valid HTTP status code" << std::endl;
+      rep = http::server::reply::stock_reply(http::server::reply::internal_server_error);
+      return;
+    }
+
+    rep.status = http::server::reply::status_type(status);
+
+    // Populate headers
+    object hdrs = jsgi_res.get_property_object("headers");
+
+    bool send_file = false;
+    std::string x_sendfile;
+    if (( send_file = hdrs.has_property("x-sendfile")) == true) {
+      x_sendfile = hdrs.get_property("x-sendfile").to_std_string();
+      hdrs.delete_property("x-sendfile");
+    }
+
+    bool content_type_set = false;
+    for ( property_iterator iter = hdrs.begin(), end = hdrs.end(); iter != end; ++iter) {
+      http::server::header h;
+      h.name = iter->to_std_string();
+
+      // If using X-SendFile, ignore any content length headers
+      if (send_file && boost::to_lower_copy(h.name) == "content-length")
+        continue;
+      // If using X-SendFile, use Content-Type if provided
+      if (send_file && boost::to_lower_copy(h.name) == "content-type")
+        content_type_set = true;
+
+      h.value = hdrs.get_property(*iter).to_std_string();
+      rep.headers.push_back(h);
+    }
+
+    // If X-SendFile, ignore body.
+    if (send_file) {
+      serve_file(rep, x_sendfile, !content_type_set);
+      return;
+    }
+
+    v = jsgi_res.get_property("body");
+    if (v.is_undefined_or_null() || !v.is_object()) {
+      std::cerr << "res.body is not an object" << std::endl;
+      rep = http::server::reply::stock_reply(http::server::reply::internal_server_error);
+      return;
+    }
+
+    object body = v.get_object();
+    v = body.get_property("forEach");
+    if (v.is_undefined_or_null() || !v.is_function()) {
+      std::cerr << "res.body.forEach is not a function" << std::endl;
+      rep = http::server::reply::stock_reply(http::server::reply::internal_server_error);
+      return;
+    }
+
+    // Create a callback closure to pass to forEach
+    root_function body_writer(create_native_function(
+      object(),
+      "Zest.writeChunk",
+      boost::function<void (value)>(
+        phoenix::bind(&http::server::reply::body_appender, rep, args::arg1)
+      )
+    ));
+
+    body.call("forEach", body_writer);
     return;
   }
-
-  object jsgi_res = rv.to_object();
-  object body = jsgi_res.get_property_object("body");
-
-  value v = jsgi_res.get_property("status");
-  int status;
-
-  if (!v.is_int() || (status = v.get_int())  < 100) {
-    std::cerr << "res.status is not a valid HTTP status code" << std::endl;
-    rep = http::server::reply::stock_reply(http::server::reply::internal_server_error);
-    return;
+  catch (exception &e) {
+    std::cerr << "JSGI Error happened" << std::endl;
+    std::cerr << e.what() << std::endl;
   }
-
-  rep.status = http::server::reply::status_type(status);
-
-  // Populate headers
-  object hdrs = jsgi_res.get_property_object("headers");
-
-  bool send_file = false;
-  std::string x_sendfile;
-  if (( send_file = hdrs.has_property("x-sendfile")) == true) {
-    x_sendfile = hdrs.get_property("x-sendfile").to_std_string();
-    hdrs.delete_property("x-sendfile");
+  catch (...) {
+    std::cerr << "Unknown error" << std::endl;
   }
-
-  bool content_type_set = false;
-  for ( property_iterator iter = hdrs.begin(), end = hdrs.end(); iter != end; ++iter) {
-    http::server::header h;
-    h.name = iter->to_std_string();
-
-    // If using X-SendFile, ignore any content length headers
-    if (send_file && boost::to_lower_copy(h.name) == "content-length")
-      continue;
-    // If using X-SendFile, use Content-Type if provided
-    if (send_file && boost::to_lower_copy(h.name) == "content-type")
-      content_type_set = true;
-
-    h.value = hdrs.get_property(*iter).to_std_string();
-    rep.headers.push_back(h);
-  }
-
-  // If X-SendFile, ignore body.
-  if (send_file) {
-    serve_file(rep, x_sendfile, !content_type_set);
-    return;
-  }
-
-  // Create a callback closure to pass to forEach
-  root_function body_writer(create_native_function(
-    object(),
-    "Zest.writeChunk",
-    boost::function<void (value)>(
-      phoenix::bind(&http::server::reply::body_appender, rep, args::arg1)
-    )
-  ));
-
-  body.call("forEach", body_writer);
+  rep = httpd::reply::stock_reply(httpd::reply::internal_server_error);
 }
 
 

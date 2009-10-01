@@ -1,13 +1,13 @@
-//
-// server.hpp
-// ~~~~~~~~~~
-//
-// Copyright (c) 2003-2008 Christopher M. Kohlhoff (chris at kohlhoff dot com)
-// Modified by Ash Belrin, 2009
-//
-// Distributed under the Boost Software License, Version 1.0. (See accompanying
-// file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
-//
+/*
+ * Copyright (c) 2009 Ash Berlin
+ *
+ * Based on work that is
+ * Copyright (c) 2003-2008 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+ *
+ * Distributed under the Boost Software License, Version 1.0. (See accompanying
+ * file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+ *
+ */
 
 #ifndef HTTP_SERVER_HPP
 #define HTTP_SERVER_HPP

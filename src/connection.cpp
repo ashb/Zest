@@ -11,8 +11,13 @@
 #include "connection.hpp"
 #include <vector>
 #include <boost/bind.hpp>
+#include <boost/spirit/home/phoenix/core.hpp>
+#include <boost/spirit/home/phoenix/bind.hpp>
 #include "connection_manager.hpp"
 #include "request_handler.hpp"
+
+namespace phoenix = boost::phoenix;
+namespace args = phoenix::arg_names;
 
 namespace http {
 namespace server {
@@ -49,12 +54,23 @@ void connection::handle_read(const boost::system::error_code& e,
   if (!e)
   {
     boost::tribool result;
-    boost::tie(result, boost::tuples::ignore) = request_parser_.parse(
-        request_, buffer_.data(), buffer_.data() + bytes_transferred);
+    buffer_iterator end_of_read = buffer_.begin() + bytes_transferred,
+                    consumed;
+
+    boost::tie(result, consumed) = request_parser_.parse(
+        request_, buffer_.begin(), end_of_read);
 
     if (result)
     {
+      // Request parsed!
+      // Store extra data (message body) that we might have already read from
+      // the socket
+      data_buffer_.insert(data_buffer_.begin(), consumed, end_of_read);
+
+      // Handle the request
       request_handler_.handle_request(request_, reply_);
+
+      // And queue the response to be written out
       boost::asio::async_write(socket_, reply_.to_buffers(),
           boost::bind(&connection::handle_write, shared_from_this(),
             boost::asio::placeholders::error));

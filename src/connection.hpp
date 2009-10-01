@@ -16,6 +16,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <deque>
 #include "reply.hpp"
 #include "request.hpp"
 #include "request_handler.hpp"
@@ -63,7 +64,16 @@ private:
   request_handler& request_handler_;
 
   /// Buffer for incoming data.
-  boost::array<char, 8192> buffer_;
+  enum {
+    buffer_size = 8192
+  };
+
+  typedef boost::array<char, buffer_size> buffer_t;
+  typedef buffer_t::iterator buffer_iterator;
+  buffer_t buffer_;
+
+  /// Buffer for un-consumed data between reads.
+  std::deque<char> data_buffer_;
 
   /// The incoming request.
   request request_;

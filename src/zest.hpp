@@ -52,7 +52,8 @@ public:
   explicit jsgi_request_handler(zest &server);
 
   void handle_request(const http::server::request &req,
-                      http::server::reply & rep);
+                      http::server::reply & rep,
+                      http::server::connection &conn);
 };
 
 }

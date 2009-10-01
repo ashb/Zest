@@ -16,6 +16,8 @@
 #include "connection_manager.hpp"
 #include "request_handler.hpp"
 
+using namespace flusspferd;
+
 namespace phoenix = boost::phoenix;
 namespace args = phoenix::arg_names;
 
@@ -68,7 +70,7 @@ void connection::handle_read(const boost::system::error_code& e,
       data_buffer_.insert(data_buffer_.begin(), consumed, end_of_read);
 
       // Handle the request
-      request_handler_.handle_request(request_, reply_);
+      request_handler_.handle_request(request_, reply_, *this);
 
       // And queue the response to be written out
       boost::asio::async_write(socket_, reply_.to_buffers(),
@@ -109,6 +111,55 @@ void connection::handle_write(const boost::system::error_code& e)
   {
     connection_manager_.stop(shared_from_this());
   }
+}
+
+object connection::read_from_body(std::size_t len) {
+  local_root_scope rooter;
+  binary &blob = create_native_object<byte_string>(object(), (unsigned char const*)0, 0);
+
+  binary::vector_type &blob_vec = blob.get_data();
+
+  std::size_t buf_size = data_buffer_.size();
+
+  // There is some data in the buffers already - copy what we need out.
+  if (buf_size) {
+    std::size_t n = std::min(buf_size,len);
+    std::deque<char>::iterator end = data_buffer_.begin() + n;
+
+    blob_vec.insert( blob_vec.end(), data_buffer_.begin(), end );
+    data_buffer_.erase( data_buffer_.begin(), end);
+    len -= n;
+  }
+  while (len > 0) {
+    boost::system::error_code ec;
+    std::size_t n;
+
+    n = boost::asio::read(
+      socket_,
+      boost::asio::buffer(buffer_),
+      boost::asio::transfer_all(), ec
+    );
+
+    if (!ec)
+    {
+      if (n > len) {
+        // We read more bytes than asked for. Store the unasked for ones in
+        // data_buffer_
+        buffer_iterator it = buffer_.begin() + len;
+        blob_vec.insert(blob_vec.end(), buffer_.begin(), it);
+        data_buffer_.insert(data_buffer_.end(), it+1, buffer_.begin() + n);
+        len = 0;
+      }
+      else {
+        len -= n;
+        blob_vec.insert(blob_vec.end(), buffer_.begin(), buffer_.begin() + n);
+      }
+    }
+    else
+      throw exception(ec.message());
+  }
+
+  return blob;
 }
 
 } // namespace server

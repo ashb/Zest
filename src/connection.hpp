@@ -46,7 +46,10 @@ public:
   /// Stop all asynchronous operations associated with the connection.
   void stop();
 
+  flusspferd::object read_from_body(std::size_t len);
+
 private:
+
   /// Handle completion of a read operation.
   void handle_read(const boost::system::error_code& e,
       std::size_t bytes_transferred);

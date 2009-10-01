@@ -83,7 +83,9 @@ jsgi_request_handler::jsgi_request_handler(zest &server)
 {
 }
 
-void jsgi_request_handler::handle_request(const httpd::request &req, httpd::reply &rep)
+void jsgi_request_handler::handle_request(
+  const httpd::request &req, httpd::reply &rep,
+  httpd::connection &conn)
 {
   // Turn the req into the JSGI env.
   object env;
@@ -112,7 +114,19 @@ void jsgi_request_handler::handle_request(const httpd::request &req, httpd::repl
     env.set_property("scriptName", "");
     env.set_property("pathInfo", req.uri);
     env.set_property("queryString", req.query_string);
-    //env.set_property("protocol", req.
+
+    object body = create_object();
+    env.set_property("body", body);
+
+    // Create a callback closing over the socket.
+    root_function body_writer(create_native_function(
+      body,
+      "read",
+      boost::function<object (std::size_t)>(
+        phoenix::bind(&http::server::connection::read_from_body, conn, args::arg1)
+      )
+    ));
+
 
     // env.headers
     object headers = create_object();
@@ -165,7 +179,6 @@ void jsgi_request_handler::handle_request(const httpd::request &req, httpd::repl
   // Populate headers
   object const &hdrs = jsgi_res.get_property_object("headers");
 
-  bool content_length_found = false;
   for ( property_iterator iter = hdrs.begin(), end = hdrs.end(); iter != end; ++iter) {
     http::server::header h;
     h.name = iter->to_std_string();

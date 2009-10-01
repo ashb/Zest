@@ -19,6 +19,7 @@ namespace server {
 
 struct reply;
 struct request;
+struct connection;
 
 /// The common handler for all incoming requests.
 class request_handler
@@ -28,7 +29,7 @@ public:
   virtual ~request_handler() {}
 
   /// Handle a request and produce a reply.
-  virtual void handle_request(const request& req, reply& rep) = 0;
+  virtual void handle_request(const request& req, reply& rep, connection &conn) = 0;
 };
 
 } // namespace server

@@ -83,74 +83,78 @@ jsgi_request_handler::jsgi_request_handler(zest &server)
 {
 }
 
+object jsgi_request_handler::build_jsgi_env(
+  const httpd::request &req, httpd::connection &conn) {
+  local_root_scope scope;
+
+  object env = create_object();
+
+  // env.jsgi
+  object jsgi = create_object();
+  env.set_property("jsgi", jsgi);
+
+  array ver = create_array();
+  ver.call("push", 0,3,0);
+  jsgi.set_property("version", ver);
+
+  jsgi.set_property(
+    "errors",
+    global().call("require", "system")
+            .to_object()
+            .get_property("stderr")
+  );
+
+  env.set_property("requestMethod", req.method);
+  env.set_property("scriptName", "");
+  env.set_property("pathInfo", req.uri);
+  env.set_property("queryString", req.query_string);
+
+  object body = create_object();
+  env.set_property("body", body);
+
+  // Create a callback closing over the socket.
+  root_function body_writer(create_native_function(
+    body,
+    "read",
+    boost::function<object (std::size_t)>(
+      phoenix::bind(&http::server::connection::read_from_body, conn, args::arg1)
+    )
+  ));
+
+
+  // env.headers
+  object headers = create_object();
+
+  BOOST_FOREACH(http::server::header h, req.headers) {
+    string hdr_str;
+    if (headers.has_own_property(h.name)) {
+      // already exists, combined as specified by RFC 2616
+      hdr_str = string::concat(
+          string::concat(
+            headers.get_property(h.name),
+            ","
+          ),
+          h.value
+      );
+    }
+    else {
+      hdr_str = h.value;
+    }
+    headers.set_property(h.name, hdr_str);
+  }
+
+  env.set_property("headers", headers);
+
+  return env;
+}
+
 void jsgi_request_handler::handle_request(
   const httpd::request &req, httpd::reply &rep,
   httpd::connection &conn)
 {
   // Turn the req into the JSGI env.
-  object env;
+  object env = build_jsgi_env(req, conn);
 
-  {
-    local_root_scope scope;
-
-    env = create_object();
-
-    // env.jsgi
-    object jsgi = create_object();
-    env.set_property("jsgi", jsgi);
-
-    array ver = create_array();
-    ver.call("push", 0,3,0);
-    jsgi.set_property("version", ver);
-
-    jsgi.set_property(
-      "errors",
-      global().call("require", "system")
-              .to_object()
-              .get_property("stderr")
-    );
-
-    env.set_property("requestMethod", req.method);
-    env.set_property("scriptName", "");
-    env.set_property("pathInfo", req.uri);
-    env.set_property("queryString", req.query_string);
-
-    object body = create_object();
-    env.set_property("body", body);
-
-    // Create a callback closing over the socket.
-    root_function body_writer(create_native_function(
-      body,
-      "read",
-      boost::function<object (std::size_t)>(
-        phoenix::bind(&http::server::connection::read_from_body, conn, args::arg1)
-      )
-    ));
-
-
-    // env.headers
-    object headers = create_object();
-
-    BOOST_FOREACH(http::server::header h, req.headers) {
-      string hdr_str;
-      if (headers.has_own_property(h.name)) {
-        // already exists, combined as specified by RFC 2616
-        hdr_str = string::concat(
-            string::concat(
-              headers.get_property(h.name),
-              ","
-            ),
-            h.value
-        );
-      }
-      else {
-        hdr_str = h.value;
-      }
-      headers.set_property(h.name, hdr_str);
-    }
-
-    env.set_property("headers", headers);
-  }
 
   // Root it! Make sure it doesn't get GC'd when we are sending, cos that would
   // be really bad

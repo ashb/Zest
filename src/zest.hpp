@@ -51,6 +51,8 @@ public:
 class jsgi_request_handler : public http::server::request_handler {
 protected:
   zest &_server;
+  flusspferd::object build_jsgi_env(const http::server::request &req,
+                        http::server::connection &conn);
 public:
   explicit jsgi_request_handler(zest &server);
 

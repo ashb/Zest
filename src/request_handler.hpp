@@ -9,14 +9,13 @@
  *
  */
 
-#ifndef HTTP_REQUEST_HANDLER_HPP
-#define HTTP_REQUEST_HANDLER_HPP
+#ifndef ZEST_REQUEST_HANDLER_HPP
+#define ZEST_REQUEST_HANDLER_HPP
 
 #include <string>
 #include <boost/noncopyable.hpp>
 
-namespace http {
-namespace server {
+namespace zest {
 
 struct reply;
 struct request;
@@ -33,7 +32,6 @@ public:
   virtual void handle_request(const request& req, reply& rep, connection &conn) = 0;
 };
 
-} // namespace server
-} // namespace http
+} // namespace zest
 
-#endif // HTTP_REQUEST_HANDLER_HPP
+#endif // ZEST_REQUEST_HANDLER_HPP

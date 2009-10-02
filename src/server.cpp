@@ -12,8 +12,7 @@
 #include "server.hpp"
 #include <boost/bind.hpp>
 
-namespace http {
-namespace server {
+namespace zest {
 
 server::server(const std::string& address, const std::string& port,
     request_handler& handler)
@@ -75,5 +74,4 @@ void server::handle_stop()
   connection_manager_.stop_all();
 }
 
-} // namespace server
-} // namespace http
+} // namespace zest

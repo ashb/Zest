@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef HTTP_SERVER_HPP
-#define HTTP_SERVER_HPP
+#ifndef ZEST_SERVER_HPP
+#define ZEST_SERVER_HPP
 
 #include <boost/asio.hpp>
 #include <string>
@@ -20,8 +20,7 @@
 #include "request_handler.hpp"
 
 
-namespace http {
-namespace server {
+namespace zest {
 
 /// The top-level class of the HTTP server.
 class server
@@ -62,7 +61,6 @@ private:
   connection_ptr new_connection_;
 };
 
-} // namespace server
-} // namespace http
+} // namespace zest
 
-#endif // HTTP_SERVER_HPP
+#endif // ZEST_SERVER_HPP

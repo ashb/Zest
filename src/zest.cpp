@@ -16,16 +16,15 @@
 #include <fstream>
 
 using namespace flusspferd;
-using namespace juice;
-namespace httpd = http::server;
+using namespace zest;
 namespace phoenix = boost::phoenix;
 namespace args = phoenix::arg_names;
 
 FLUSSPFERD_LOADER_SIMPLE(exports) {
-  load_class<zest>(exports);
+  load_class<zest_server>(exports);
 }
 
-zest::zest(object const &self, call_context &x)
+zest_server::zest_server(object const &self, call_context &x)
   : base_type(self)
 {
   std::string addr, port;
@@ -59,37 +58,37 @@ zest::zest(object const &self, call_context &x)
     addr = "0.0.0.0";
 
   _req_handler.reset(new jsgi_request_handler(*this));
-  _server.reset(new http::server::server(addr,port,*_req_handler));
+  _server.reset(new server(addr,port,*_req_handler));
 }
 
-zest::~zest() {
+zest_server::~zest_server() {
   if (_server.unique()) {
     _server->stop();
   }
 }
 
-void zest::start() {
+void zest_server::start() {
   // Root the zest object to make sure it doesn't get GC'd
   root_object rooted_server(this->get_object());
   std::cerr << "Starting" << std::endl;
   _server->run();
 }
 
-void zest::stop() {
+void zest_server::stop() {
   _server->stop();
 }
 
-void zest::trace(tracer &trc) {
+void zest_server::trace(tracer &trc) {
   trc("zest.handler callback", _handler_cb);
 }
 
-jsgi_request_handler::jsgi_request_handler(zest &server)
+jsgi_request_handler::jsgi_request_handler(zest_server &server)
   : _server(server)
 {
 }
 
 object jsgi_request_handler::build_jsgi_env(
-  const httpd::request &req, httpd::connection &conn) {
+  const request &req, connection &conn) {
   local_root_scope scope;
 
   object env = create_object();
@@ -124,7 +123,7 @@ object jsgi_request_handler::build_jsgi_env(
     body,
     "read",
     boost::function<object (std::size_t)>(
-      phoenix::bind(&http::server::connection::read_from_body, conn, args::arg1)
+      phoenix::bind(&connection::read_from_body, conn, args::arg1)
     )
   ));
 
@@ -133,7 +132,7 @@ object jsgi_request_handler::build_jsgi_env(
   object headers = create_object();
   bool host_seen = false;
 
-  BOOST_FOREACH(http::server::header h, req.headers) {
+  BOOST_FOREACH(header h, req.headers) {
     string hdr_str;
 
     boost::to_lower(h.name);
@@ -179,8 +178,8 @@ object jsgi_request_handler::build_jsgi_env(
 }
 
 void jsgi_request_handler::handle_request(
-  const httpd::request &req, httpd::reply &rep,
-  httpd::connection &conn)
+  const request &req, reply &rep,
+  connection &conn)
 {
   // Turn the req into the JSGI env.
   object env = build_jsgi_env(req, conn);
@@ -192,7 +191,7 @@ void jsgi_request_handler::handle_request(
 
     if (rv.is_undefined_or_null() || !rv.is_object()) {
       std::cerr << "no res or res is not an object" << std::endl;
-      rep = http::server::reply::stock_reply(http::server::reply::internal_server_error);
+      rep = reply::stock_reply(reply::internal_server_error);
       return;
     }
 
@@ -203,11 +202,11 @@ void jsgi_request_handler::handle_request(
 
     if (!v.is_int() || (status = v.get_int())  < 100) {
       std::cerr << "res.status is not a valid HTTP status code" << std::endl;
-      rep = http::server::reply::stock_reply(http::server::reply::internal_server_error);
+      rep = reply::stock_reply(reply::internal_server_error);
       return;
     }
 
-    rep.status = http::server::reply::status_type(status);
+    rep.status = reply::status_type(status);
 
     // Populate headers
     object hdrs = jsgi_res.get_property_object("headers");
@@ -221,7 +220,7 @@ void jsgi_request_handler::handle_request(
 
     bool content_type_set = false;
     for ( property_iterator iter = hdrs.begin(), end = hdrs.end(); iter != end; ++iter) {
-      http::server::header h;
+      header h;
       h.name = iter->to_std_string();
 
       // If using X-SendFile, ignore any content length headers
@@ -244,7 +243,7 @@ void jsgi_request_handler::handle_request(
     v = jsgi_res.get_property("body");
     if (v.is_undefined_or_null() || !v.is_object()) {
       std::cerr << "res.body is not an object" << std::endl;
-      rep = http::server::reply::stock_reply(http::server::reply::internal_server_error);
+      rep = reply::stock_reply(reply::internal_server_error);
       return;
     }
 
@@ -252,7 +251,7 @@ void jsgi_request_handler::handle_request(
     v = body.get_property("forEach");
     if (v.is_undefined_or_null() || !v.is_function()) {
       std::cerr << "res.body.forEach is not a function" << std::endl;
-      rep = http::server::reply::stock_reply(http::server::reply::internal_server_error);
+      rep = reply::stock_reply(reply::internal_server_error);
       return;
     }
 
@@ -261,7 +260,7 @@ void jsgi_request_handler::handle_request(
       object(),
       "Zest.writeChunk",
       boost::function<void (value)>(
-        phoenix::bind(&http::server::reply::body_appender, rep, args::arg1)
+        phoenix::bind(&reply::body_appender, rep, args::arg1)
       )
     ));
 
@@ -275,24 +274,24 @@ void jsgi_request_handler::handle_request(
   catch (...) {
     std::cerr << "Unknown error" << std::endl;
   }
-  rep = httpd::reply::stock_reply(httpd::reply::internal_server_error);
+  rep = reply::stock_reply(reply::internal_server_error);
 }
 
 
-void jsgi_request_handler::serve_file(http::server::reply &rep,
+void jsgi_request_handler::serve_file(reply &rep,
                   std::string const &fname, bool add_content_type) {
 
   std::ifstream is(fname.c_str(), std::ios::in | std::ios::binary);
   if (!is)
   {
-    rep = httpd::reply::stock_reply(httpd::reply::not_found);
+    rep = reply::stock_reply(reply::not_found);
     return;
   }
 
   char buf[512];
   while (is.read(buf, sizeof(buf)).gcount() > 0)
     rep.content.append(buf, is.gcount());
-  httpd::header h;
+  header h;
   h.name = "Content-Length";
   h.value = boost::lexical_cast<std::string>(rep.content.size());
   rep.headers.push_back(h);
@@ -308,7 +307,7 @@ void jsgi_request_handler::serve_file(http::server::reply &rep,
     }
 
     h.name = "Content-Type";
-    h.value = httpd::mime_types::extension_to_type(extension);
+    h.value = mime_types::extension_to_type(extension);
     rep.headers.push_back(h);
   }
 }

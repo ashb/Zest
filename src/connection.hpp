@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef HTTP_CONNECTION_HPP
-#define HTTP_CONNECTION_HPP
+#ifndef ZEST_CONNECTION_HPP
+#define ZEST_CONNECTION_HPP
 
 #include <boost/asio.hpp>
 #include <boost/array.hpp>
@@ -23,8 +23,7 @@
 #include "request_handler.hpp"
 #include "request_parser.hpp"
 
-namespace http {
-namespace server {
+namespace zest {
 
 class connection_manager;
 
@@ -91,7 +90,6 @@ private:
 
 typedef boost::shared_ptr<connection> connection_ptr;
 
-} // namespace server
-} // namespace http
+} // namespace zest
 
-#endif // HTTP_CONNECTION_HPP
+#endif // ZEST_CONNECTION_HPP

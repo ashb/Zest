@@ -16,12 +16,12 @@
 #include <flusspferd.hpp>
 #include "server.hpp"
 
-namespace juice {
+namespace zest {
 
 class jsgi_request_handler;
 
 FLUSSPFERD_CLASS_DESCRIPTION(
-  zest,
+  zest_server,
     (full_name, "juice.Zest")
     (constructor_name, "Zest")
     (methods,
@@ -32,7 +32,7 @@ FLUSSPFERD_CLASS_DESCRIPTION(
 {
 private:
   friend class jsgi_request_handler;
-  typedef boost::shared_ptr<http::server::server> server_ptr_t;
+  typedef boost::shared_ptr<server> server_ptr_t;
   typedef boost::shared_ptr<jsgi_request_handler> request_handler_t;
 
   server_ptr_t _server;
@@ -41,8 +41,8 @@ private:
 
   int _port;
 public:
-  zest(flusspferd::object const &self, flusspferd::call_context &x);
-  virtual ~zest();
+  zest_server(flusspferd::object const &self, flusspferd::call_context &x);
+  virtual ~zest_server();
 
   void start();
   void stop();
@@ -50,22 +50,22 @@ public:
   void trace(flusspferd::tracer &trc);
 };
 
-class jsgi_request_handler : public http::server::request_handler {
+class jsgi_request_handler : public request_handler {
 protected:
-  zest &_server;
-  flusspferd::object build_jsgi_env(const http::server::request &req,
-                        http::server::connection &conn);
+  zest_server &_server;
+  flusspferd::object build_jsgi_env(const request &req,
+                        connection &conn);
 
-  void serve_file(http::server::reply &rep, std::string const &fname,
+  void serve_file(reply &rep, std::string const &fname,
                   bool add_content_type);
 public:
-  explicit jsgi_request_handler(zest &server);
+  explicit jsgi_request_handler(zest_server &server);
 
-  void handle_request(const http::server::request &req,
-                      http::server::reply & rep,
-                      http::server::connection &conn);
+  void handle_request(const request &req,
+                      reply & rep,
+                      connection &conn);
 };
 
-}
+} // namespace zest
 
 #endif

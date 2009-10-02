@@ -17,8 +17,7 @@
 
 using namespace flusspferd;
 
-namespace http {
-namespace server {
+namespace zest {
 
 namespace status_strings {
 
@@ -278,5 +277,4 @@ void reply::body_appender(value &v) {
   content.append(vec.begin(), vec.end());
 }
 
-} // namespace server
-} // namespace http
+} // namespace zest

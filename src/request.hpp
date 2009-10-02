@@ -9,15 +9,14 @@
  *
  */
 
-#ifndef HTTP_REQUEST_HPP
-#define HTTP_REQUEST_HPP
+#ifndef ZEST_REQUEST_HPP
+#define ZEST_REQUEST_HPP
 
 #include <string>
 #include <vector>
 #include "header.hpp"
 
-namespace http {
-namespace server {
+namespace zest {
 
 /// A request received from a client.
 struct request
@@ -30,7 +29,6 @@ struct request
   std::vector<header> headers;
 };
 
-} // namespace server
-} // namespace http
+} // namespace zest
 
-#endif // HTTP_REQUEST_HPP
+#endif // ZEST_REQUEST_HPP

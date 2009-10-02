@@ -9,13 +9,12 @@
  *
  */
 
-#ifndef HTTP_HEADER_HPP
-#define HTTP_HEADER_HPP
+#ifndef ZEST_HEADER_HPP
+#define ZEST_HEADER_HPP
 
 #include <string>
 
-namespace http {
-namespace server {
+namespace zest {
 
 struct header
 {
@@ -23,7 +22,6 @@ struct header
   std::string value;
 };
 
-} // namespace server
-} // namespace http
+} // namespace zest
 
-#endif // HTTP_HEADER_HPP
+#endif // ZEST_HEADER_HPP

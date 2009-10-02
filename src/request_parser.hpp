@@ -9,14 +9,13 @@
  *
  */
 
-#ifndef HTTP_REQUEST_PARSER_HPP
-#define HTTP_REQUEST_PARSER_HPP
+#ifndef ZEST_REQUEST_PARSER_HPP
+#define ZEST_REQUEST_PARSER_HPP
 
 #include <boost/logic/tribool.hpp>
 #include <boost/tuple/tuple.hpp>
 
-namespace http {
-namespace server {
+namespace zest {
 
 struct request;
 
@@ -92,7 +91,6 @@ private:
   } state_;
 };
 
-} // namespace server
-} // namespace http
+} // namespace zest
 
-#endif // HTTP_REQUEST_PARSER_HPP
+#endif // ZEST_REQUEST_PARSER_HPP

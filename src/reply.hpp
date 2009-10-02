@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef HTTP_REPLY_HPP
-#define HTTP_REPLY_HPP
+#ifndef ZEST_REPLY_HPP
+#define ZEST_REPLY_HPP
 
 #include <string>
 #include <vector>
@@ -18,8 +18,7 @@
 #include <flusspferd.hpp>
 #include "header.hpp"
 
-namespace http {
-namespace server {
+namespace zest {
 
 /// A reply to be sent to a client.
 struct reply
@@ -62,7 +61,6 @@ struct reply
   void body_appender(flusspferd::value &v);
 };
 
-} // namespace server
-} // namespace http
+} // namespace zest
 
-#endif // HTTP_REPLY_HPP
+#endif // ZEST_REPLY_HPP

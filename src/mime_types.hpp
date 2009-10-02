@@ -9,20 +9,18 @@
  *
  */
 
-#ifndef HTTP_MIME_TYPES_HPP
-#define HTTP_MIME_TYPES_HPP
+#ifndef ZEST_MIME_TYPES_HPP
+#define ZEST_MIME_TYPES_HPP
 
 #include <string>
 
-namespace http {
-namespace server {
+namespace zest {
 namespace mime_types {
 
 /// Convert a file extension into a MIME type.
 std::string extension_to_type(const std::string& extension);
 
 } // namespace mime_types
-} // namespace server
-} // namespace http
+} // namespace zest
 
-#endif // HTTP_MIME_TYPES_HPP
+#endif // ZEST_MIME_TYPES_HPP

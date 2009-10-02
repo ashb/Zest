@@ -9,15 +9,14 @@
  *
  */
 
-#ifndef HTTP_CONNECTION_MANAGER_HPP
-#define HTTP_CONNECTION_MANAGER_HPP
+#ifndef ZEST_CONNECTION_MANAGER_HPP
+#define ZEST_CONNECTION_MANAGER_HPP
 
 #include <set>
 #include <boost/noncopyable.hpp>
 #include "connection.hpp"
 
-namespace http {
-namespace server {
+namespace zest {
 
 /// Manages open connections so that they may be cleanly stopped when the server
 /// needs to shut down.
@@ -39,7 +38,6 @@ private:
   std::set<connection_ptr> connections_;
 };
 
-} // namespace server
-} // namespace http
+} // namespace zest
 
-#endif // HTTP_CONNECTION_MANAGER_HPP
+#endif // ZEST_CONNECTION_MANAGER_HPP

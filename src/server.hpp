@@ -22,7 +22,7 @@
 
 namespace zest {
 
-/// The top-level class of the HTTP server.
+/// The HTTP server class itself.
 class server
   : private boost::noncopyable
 {
@@ -37,6 +37,12 @@ public:
 
   /// Stop the server.
   void stop();
+
+  /// The port the server is lisenting on
+  unsigned short port() const { return port_; }
+
+  /// The address we are listening on
+  std::string address() const { return address_; }
 
 private:
   /// Handle completion of an asynchronous accept operation.
@@ -59,6 +65,10 @@ private:
 
   /// The next connection to be accepted.
   connection_ptr new_connection_;
+
+  unsigned short port_;
+
+  std::string address_;
 };
 
 } // namespace zest

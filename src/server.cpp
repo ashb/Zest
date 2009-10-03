@@ -12,6 +12,8 @@
 #include "server.hpp"
 #include <boost/bind.hpp>
 
+namespace asio = boost::asio;
+
 namespace zest {
 
 server::server(const std::string& address, const std::string& port,
@@ -24,11 +26,21 @@ server::server(const std::string& address, const std::string& port,
           connection_manager_, request_handler_))
 {
   // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
-  boost::asio::ip::tcp::resolver resolver(io_service_);
-  boost::asio::ip::tcp::resolver::query query(address, port);
-  boost::asio::ip::tcp::endpoint endpoint = *resolver.resolve(query);
+  asio::ip::tcp::resolver resolver(io_service_);
+  asio::ip::tcp::resolver::query query(address, port);
+  asio::ip::tcp::endpoint endpoint = *resolver.resolve(query);
+
+  port_ = endpoint.port();
+
+  if (endpoint.address() == asio::ip::address_v4::any()) {
+    address_ = asio::ip::host_name();
+  }
+  else {
+    address_ = endpoint.address().to_string();
+  }
+
   acceptor_.open(endpoint.protocol());
-  acceptor_.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
+  acceptor_.set_option(asio::ip::tcp::acceptor::reuse_address(true));
   acceptor_.bind(endpoint);
   acceptor_.listen();
   acceptor_.async_accept(new_connection_->socket(),
@@ -61,7 +73,7 @@ void server::handle_accept(const boost::system::error_code& e)
           connection_manager_, request_handler_));
     acceptor_.async_accept(new_connection_->socket(),
         boost::bind(&server::handle_accept, this,
-          boost::asio::placeholders::error));
+          asio::placeholders::error));
   }
 }
 

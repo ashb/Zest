@@ -28,6 +28,10 @@ FLUSSPFERD_CLASS_DESCRIPTION(
       ("start", bind, start)
       ("stop", bind, stop)
     )
+    (properties,
+      ("address", getter, address)
+      ("port", getter, port)
+    )
   )
 {
 private:
@@ -39,7 +43,6 @@ private:
   request_handler_t _req_handler;
   flusspferd::function _handler_cb;
 
-  int _port;
 public:
   zest_server(flusspferd::object const &self, flusspferd::call_context &x);
   virtual ~zest_server();
@@ -48,6 +51,11 @@ public:
   void stop();
 
   void trace(flusspferd::tracer &trc);
+
+  unsigned short port();
+  std::string address();
+
+  flusspferd::string to_string();
 };
 
 } // namespace zest

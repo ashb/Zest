@@ -41,7 +41,6 @@ zest_server::zest_server(object const &self, call_context &x)
     port = opts.get_property("port").to_std_string();
   else
     port = "3000";
-  _port = boost::lexical_cast<int>(port);
 
   if (opts.has_property("address"))
     addr = opts.get_property("address").to_std_string();
@@ -61,7 +60,7 @@ zest_server::~zest_server() {
 void zest_server::start() {
   // Root the zest object to make sure it doesn't get GC'd
   root_object rooted_server(this->get_object());
-  std::cerr << "Starting" << std::endl;
+  std::cerr << "Listening on http://" << address() << ":" << port() << std::endl;
   _server->run();
 }
 
@@ -73,3 +72,19 @@ void zest_server::trace(tracer &trc) {
   trc("zest.handler callback", _handler_cb);
 }
 
+unsigned short zest_server::port() {
+  return _server->port();
+}
+
+std::string zest_server::address() {
+  return _server->address();
+}
+
+string zest_server::to_string() {
+  std::string ret = "[object Zest http://";
+  ret += address();
+  ret += ":";
+  ret += boost::lexical_cast<std::string>(port());
+  ret += " ]";
+  return ret;
+}

@@ -14,23 +14,33 @@
 
 #include <string>
 #include <boost/noncopyable.hpp>
+#include <flusspferd.hpp>
 
 namespace zest {
 
 struct reply;
 struct request;
 struct connection;
+struct zest_server;
 
-/// The common handler for all incoming requests.
+/// The handler for all incoming requests.
 class request_handler
   : private boost::noncopyable
 {
-public:
-  virtual ~request_handler() {}
+protected:
+  zest_server &_server;
+  flusspferd::object build_jsgi_env(const request &req, connection &conn);
 
-  /// Handle a request and produce a reply.
-  virtual void handle_request(const request& req, reply& rep, connection &conn) = 0;
+  void serve_file(reply &rep, std::string const &fname,
+                  bool add_content_type);
+public:
+  explicit request_handler(zest_server &server);
+
+  void handle_request(const request &req,
+                      reply & rep,
+                      connection &conn);
 };
+
 
 } // namespace zest
 

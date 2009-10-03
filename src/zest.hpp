@@ -31,9 +31,9 @@ FLUSSPFERD_CLASS_DESCRIPTION(
   )
 {
 private:
-  friend class jsgi_request_handler;
+  friend class request_handler;
   typedef boost::shared_ptr<server> server_ptr_t;
-  typedef boost::shared_ptr<jsgi_request_handler> request_handler_t;
+  typedef boost::shared_ptr<request_handler> request_handler_t;
 
   server_ptr_t _server;
   request_handler_t _req_handler;
@@ -48,22 +48,6 @@ public:
   void stop();
 
   void trace(flusspferd::tracer &trc);
-};
-
-class jsgi_request_handler : public request_handler {
-protected:
-  zest_server &_server;
-  flusspferd::object build_jsgi_env(const request &req,
-                        connection &conn);
-
-  void serve_file(reply &rep, std::string const &fname,
-                  bool add_content_type);
-public:
-  explicit jsgi_request_handler(zest_server &server);
-
-  void handle_request(const request &req,
-                      reply & rep,
-                      connection &conn);
 };
 
 } // namespace zest

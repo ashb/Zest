@@ -241,18 +241,8 @@ void request_handler::serve_file(reply &rep,
   h.value = boost::lexical_cast<std::string>(rep.content.size());
   rep.headers.push_back(h);
   if (add_content_type) {
-
-    std::string extension;
-    // Determine the file extension.
-    std::size_t last_slash_pos = fname.find_last_of("/");
-    std::size_t last_dot_pos = fname.find_last_of(".");
-    if (last_dot_pos != std::string::npos && last_dot_pos > last_slash_pos)
-    {
-      extension = fname.substr(last_dot_pos + 1);
-    }
-
     h.name = "Content-Type";
-    h.value = mime_types::extension_to_type(extension);
+    h.value = mime_types::filename_to_type(fname);
     rep.headers.push_back(h);
   }
 }

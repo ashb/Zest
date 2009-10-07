@@ -80,11 +80,11 @@ object request_handler::build_jsgi_env(
     string hdr_str;
 
     boost::to_lower(h.name);
-    if (h.name == "content-length") {
+    if (h.name == "host") {
       host_seen = true;
       std::size_t last_pos = h.value.find_last_of(":");
       if (last_pos != std::string::npos) {
-        env.set_property("serverName", h.value.substr(0, last_pos-1));
+        env.set_property("serverName", h.value.substr(0, last_pos));
         env.set_property("serverPort", h.value.substr(last_pos+1));
       }
       else {

@@ -7,6 +7,7 @@
  */
 #include "zest.hpp"
 #include <boost/lexical_cast.hpp>
+#include <iostream>
 
 using namespace flusspferd;
 using namespace zest;

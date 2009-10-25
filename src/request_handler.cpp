@@ -19,6 +19,7 @@
 #include <boost/spirit/home/phoenix/bind.hpp>
 #include <string>
 #include <fstream>
+#include <iostream>
 
 using namespace flusspferd;
 using namespace zest;
@@ -37,13 +38,11 @@ object request_handler::build_jsgi_env(
 
   object env = create_object();
 
-  // env.jsgi
-  object jsgi = create_object();
-  env.set_property("jsgi", jsgi);
+  // env.jsgi --------------------------------
+  object jsgi = env.set_property("jsgi", create_object()).to_object();
 
-  array ver = create_array();
-  ver.call("push", 0,3,0);
-  jsgi.set_property("version", ver);
+  array ver = jsgi.set_property("version", create_array()).to_object();
+  ver.call("push", 0,3);
 
   jsgi.set_property(
     "errors",
@@ -52,20 +51,30 @@ object request_handler::build_jsgi_env(
             .get_property("stderr")
   );
 
-  env.set_property("requestMethod", req.method);
+  jsgi.set_property("multithread", false);
+  jsgi.set_property("multiprocess", false);
+  jsgi.set_property("runonce", false);
+  // end env.jsgi ----------------------------
+
+  env.set_property("method", req.method);
   env.set_property("scriptName", "");
   env.set_property("pathInfo", req.uri);
   env.set_property("queryString", req.query_string);
   env.set_property("scheme", "http");
 
+  array http_version = create_array();
+  http_version.call("push", req.http_version_major, req.http_version_minor);
+  env.set_property("version", http_version);
 
-  object body = create_object();
-  env.set_property("body", body);
+  env.set_property("remoteAddr", conn.socket().remote_endpoint().address().to_string());
+  env.set_property("authType", object());
+
+  object input = create_object();
+  env.set_property("input", input);
 
   // Create a callback closing over the socket.
   root_function body_writer(create_native_function(
-    body,
-    "read",
+    input, "read",
     boost::function<object (std::size_t)>(
       phoenix::bind(&connection::read_from_body, conn, args::arg1)
     )
@@ -84,22 +93,19 @@ object request_handler::build_jsgi_env(
       host_seen = true;
       std::size_t last_pos = h.value.find_last_of(":");
       if (last_pos != std::string::npos) {
-        env.set_property("serverName", h.value.substr(0, last_pos));
-        env.set_property("serverPort", h.value.substr(last_pos+1));
+        env.set_property("host", h.value.substr(0, last_pos));
+        env.set_property("port", h.value.substr(last_pos+1));
       }
       else {
-        env.set_property("serverName", h.value);
-        env.set_property("serverPort", "");
+        env.set_property("host", h.value);
+        env.set_property("port", "");
       }
     }
 
     if (headers.has_own_property(h.name)) {
       // already exists, combined as specified by RFC 2616
       hdr_str = string::concat(
-          string::concat(
-            headers.get_property(h.name),
-            ","
-          ),
+          string::concat( headers.get_property(h.name), "," ),
           h.value
       );
     }
@@ -112,10 +118,11 @@ object request_handler::build_jsgi_env(
   env.set_property("headers", headers);
 
   if (!host_seen) {
+    boost::asio::ip::tcp::endpoint local = conn.socket().local_endpoint();
     // TODO: This is very wrong
-    env.set_property("serverName", "localhost");
-    //env.set_property("serverPort", _server._port);
-    env.set_property("serverPort", 3000);
+    env.set_property("host", local.address().to_string());
+    env.set_property("port",
+                     boost::lexical_cast<std::string>(local.port()));
   }
 
 

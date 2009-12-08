@@ -13,6 +13,9 @@ solution "Zest"
  
   configuration {}
 
+  -- Hack until i get pkg-config support in premake
+  defines {"BOOST_PARAMETER_MAX_ARITY=10"}
+
   project "libzest"
     targetname "zest"
     --targetextension ".dylib"
@@ -23,15 +26,6 @@ solution "Zest"
 
     links { "flusspferd" }
 
-    configuration { "not windows" }
-      includedirs { 
-        "/usr/local/include/boost-1_37",
-        "/Users/ash/code/js/mozjs_debug/include"
-      }
-
-      libdirs {
-        "/Users/ash/code/js/mozjs_debug/lib"
-      }
     configuration { "windows" }
       defines {"_WIN32_WINDOWS"}
       includedirs { 

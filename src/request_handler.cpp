@@ -12,16 +12,18 @@
 #include "request.hpp"
 #include "reply.hpp"
 #include "zest.hpp"
+#include <flusspferd/aliases.hpp>
+#include <flusspferd/create_on.hpp>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/spirit/home/phoenix/core.hpp>
-#include <boost/spirit/home/phoenix/bind.hpp>
+#include <boost/spirit/include/phoenix.hpp>
 #include <string>
 #include <fstream>
 #include <iostream>
 
 using namespace flusspferd;
+using namespace flusspferd::aliases;
 using namespace zest;
 
 namespace phoenix = boost::phoenix;
@@ -34,55 +36,58 @@ request_handler::request_handler(zest_server &server)
 
 object request_handler::build_jsgi_env(
   const request &req, connection &conn) {
-  local_root_scope scope;
 
-  object env = create_object();
+  root_object env(create<object>());
 
   // env.jsgi --------------------------------
-  object jsgi = env.set_property("jsgi", create_object()).to_object();
+  object jsgi = create<object>(
+    _name = "jsgi",
+    _container = env, 
+    _attributes = no_property_flag);
 
-  array ver = jsgi.set_property("version", create_array()).to_object();
-  ver.call("push", 0,3);
+  create_on(jsgi)
+    .create<array>("version", list_of(0)(3), _attributes = no_property_flag);
 
-  jsgi.set_property(
+  jsgi.set_properties(
     "errors",
     global().call("require", "system")
             .to_object()
-            .get_property("stderr")
-  );
+            .get_property("stderr"))
+    ("multithread", false)
+    ("multiprocess", false)
+    ("runonce", false);
 
-  jsgi.set_property("multithread", false);
-  jsgi.set_property("multiprocess", false);
-  jsgi.set_property("runonce", false);
   // end env.jsgi ----------------------------
 
-  env.set_property("method", req.method);
-  env.set_property("scriptName", "");
-  env.set_property("pathInfo", req.uri);
-  env.set_property("queryString", req.query_string);
-  env.set_property("scheme", "http");
+  env.set_properties("method", req.method)
+    ("scriptName", "")
+    ("pathInfo", req.uri)
+    ("queryString", req.query_string)
+    ("scheme", "http")
+    ("remoteAddr", conn.socket().remote_endpoint().address().to_string())
+    ("authType", object())
+    ("version", create<array>(list_of(req.http_version_major)(req.http_version_minor)));
 
-  array http_version = create_array();
-  http_version.call("push", req.http_version_major, req.http_version_minor);
-  env.set_property("version", http_version);
 
-  env.set_property("remoteAddr", conn.socket().remote_endpoint().address().to_string());
-  env.set_property("authType", object());
-
-  object input = create_object();
-  env.set_property("input", input);
+  object input = create<object>(_container = env, _name="input", _attributes = no_property_flag);
 
   // Create a callback closing over the socket.
-  root_function body_writer(create_native_function(
-    input, "read",
-    boost::function<object (std::size_t)>(
+  create<function>(
+    _container = input,
+    _name = "read",
+    _function = boost::function<object (std::size_t)>(
       phoenix::bind(&connection::read_from_body, conn, args::arg1)
-    )
-  ));
+    ),
+    _attributes = no_property_flag
+  );
 
 
   // env.headers
-  object headers = create_object();
+  object headers = create<object>(
+    _name = "header",
+    _container = env,
+    _attributes = no_property_flag
+  );
   bool host_seen = false;
 
   BOOST_FOREACH(header h, req.headers) {
@@ -93,17 +98,17 @@ object request_handler::build_jsgi_env(
       host_seen = true;
       std::size_t last_pos = h.value.find_last_of(":");
       if (last_pos != std::string::npos) {
-        env.set_property("host", h.value.substr(0, last_pos));
-        env.set_property("port", h.value.substr(last_pos+1));
+        env.set_properties("host", h.value.substr(0, last_pos))
+                          ("port", h.value.substr(last_pos+1));
       }
       else {
-        env.set_property("host", h.value);
-        env.set_property("port", "");
+        env.set_properties("host", h.value)("port", "");
       }
     }
 
     if (headers.has_own_property(h.name)) {
       // already exists, combined as specified by RFC 2616
+      // TODO: This should probably create/push to an array instead
       hdr_str = string::concat(
           string::concat( headers.get_property(h.name), "," ),
           h.value
@@ -115,14 +120,12 @@ object request_handler::build_jsgi_env(
     headers.set_property(h.name, hdr_str);
   }
 
-  env.set_property("headers", headers);
-
   if (!host_seen) {
     boost::asio::ip::tcp::endpoint local = conn.socket().local_endpoint();
     // TODO: This is very wrong
-    env.set_property("host", local.address().to_string());
-    env.set_property("port",
-                     boost::lexical_cast<std::string>(local.port()));
+    env.set_properties
+      ("host", local.address().to_string())
+      ("port", boost::lexical_cast<std::string>(local.port()));
   }
 
 
@@ -139,7 +142,7 @@ void request_handler::handle_request(
   // Root it! Make sure it doesn't get GC'd when we are sending, cos that would
   // be really bad
   try {
-    root_value const &rv = _server._handler_cb.call(_server, env);
+    root_value rv(_server._handler_cb.call(_server, env));
 
     if (rv.is_undefined_or_null() || !rv.is_object()) {
       std::cerr << "no res or res is not an object" << std::endl;
@@ -208,10 +211,9 @@ void request_handler::handle_request(
     }
 
     // Create a callback closure to pass to forEach
-    root_function body_writer(create_native_function(
-      object(),
-      "Zest.writeChunk",
-      boost::function<void (value)>(
+    root_function body_writer(create<function>(
+      _name = "Zest.writeChunk",
+      _function = boost::function<void (value)>(
         phoenix::bind(&reply::body_appender, rep, args::arg1)
       )
     ));

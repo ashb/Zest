@@ -12,12 +12,15 @@
 #include "connection.hpp"
 #include <vector>
 #include <boost/bind.hpp>
-#include <boost/spirit/home/phoenix/core.hpp>
-#include <boost/spirit/home/phoenix/bind.hpp>
+#include <boost/spirit/include/phoenix.hpp>
 #include "connection_manager.hpp"
 #include "request_handler.hpp"
 
+#include <flusspferd.hpp>
+#include <flusspferd/aliases.hpp>
+
 using namespace flusspferd;
+using namespace flusspferd::aliases;
 
 namespace phoenix = boost::phoenix;
 namespace args = phoenix::arg_names;
@@ -115,7 +118,7 @@ void connection::handle_write(const boost::system::error_code& e)
 
 object connection::read_from_body(std::size_t len) {
   local_root_scope rooter;
-  binary &blob = create_native_object<byte_string>(object(), (unsigned char const*)0, 0);
+  binary &blob = create<byte_string>( make_vector( (binary::element_type*)0, 0));
 
   binary::vector_type &blob_vec = blob.get_data();
 

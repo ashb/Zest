@@ -5,8 +5,8 @@
  * file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
  */
 
-#ifndef zest_events_hhp
-#define zest_events_hhp
+#ifndef zest_reactor_hpp
+#define zest_reactor_hpp
 
 #include "types.hpp"
 
@@ -18,14 +18,10 @@
 
 namespace zest {
 
-
-// Setup setTimeout et al., default asio instace and what have you
-void setup_event_loop(flusspferd::object exports, flusspferd::object require);
-
 FLUSSPFERD_CLASS_DESCRIPTION(
-  event_loop,
-    (full_name, "zest.ASIO")
-    (constructor_name, "ASIO")
+  reactor,
+    (full_name, "zest.Reactor")
+    (constructor_name, "Reactor")
     (methods,
       ("run", bind, run)
       ("run_one", bind, run_one)
@@ -63,7 +59,7 @@ protected:
       return a.id < b.id;
     }
 
-    void bind(event_loop *);
+    void bind(reactor *);
 
   };
 
@@ -80,9 +76,9 @@ protected:
 
   void setup_timer(flusspferd::call_context &x, bool repeat);
 public:
-  event_loop(flusspferd::object const &o, flusspferd::call_context &x);
-  event_loop(flusspferd::object const &o);
-  virtual ~event_loop();
+  reactor(flusspferd::object const &o, flusspferd::call_context &x);
+  reactor(flusspferd::object const &o);
+  virtual ~reactor();
 
   int run();
   int run_one();

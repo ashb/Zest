@@ -11,10 +11,14 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/system/error_code.hpp>
+#include <flusspferd/object.hpp>
 
 namespace zest {
 
 typedef boost::shared_ptr<boost::asio::io_service> shared_io_service;
+
+// Setup setTimeout et al., default asio instace and what have you
+void setup_reactor(flusspferd::object exports, flusspferd::object require);
 
 } // ns zest
 

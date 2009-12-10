@@ -7,7 +7,8 @@
  */
 
 #include "zest.hpp"
-#include "events.hpp"
+#include "types.hpp"
+#include "reactor.hpp"
 #include <boost/lexical_cast.hpp>
 #include <boost/ref.hpp>
 #include <iostream>
@@ -18,7 +19,7 @@ using namespace zest;
 FLUSSPFERD_LOADER(exports, context) {
   load_class<zest_server>(exports);
 
-  setup_event_loop(exports, context.get_property_object("require"));
+  setup_reactor(exports, context.get_property_object("require"));
 }
 
 
@@ -55,7 +56,7 @@ zest_server::zest_server(object const &self, call_context &x)
     addr = "0.0.0.0";
 
   _req_handler.reset(new http::request_handler(*this));
-  _server.reset(new http::server(addr,port,*_req_handler, event_loop::get_default_io_service()));
+  _server.reset(new http::server(addr,port,*_req_handler, reactor::get_default_io_service()));
 }
 
 zest_server::~zest_server() {

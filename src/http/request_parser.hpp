@@ -16,6 +16,7 @@
 #include <boost/tuple/tuple.hpp>
 
 namespace zest {
+namespace http {
 
 struct request;
 
@@ -91,6 +92,7 @@ private:
   } state_;
 };
 
+} // namespace http
 } // namespace zest
 
 #endif // ZEST_REQUEST_PARSER_HPP

@@ -17,6 +17,7 @@
 #include "connection.hpp"
 
 namespace zest {
+namespace http {
 
 /// Manages open connections so that they may be cleanly stopped when the server
 /// needs to shut down.
@@ -38,6 +39,7 @@ private:
   std::set<connection_ptr> connections_;
 };
 
+} // namespace http
 } // namespace zest
 
 #endif // ZEST_CONNECTION_MANAGER_HPP

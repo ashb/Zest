@@ -22,7 +22,7 @@ solution "Zest"
 
     kind "SharedLib"
     language "C++"
-    files { "src/*.cpp", "src/*.hpp" }
+    files { "src/**.cpp", "src/**.hpp" }
 
     links { "flusspferd" }
 

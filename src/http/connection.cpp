@@ -25,7 +25,7 @@ using namespace flusspferd::aliases;
 namespace phoenix = boost::phoenix;
 namespace args = phoenix::arg_names;
 
-namespace zest {
+using namespace zest::http;
 
 connection::connection(boost::asio::io_service& io_service,
     connection_manager& manager, request_handler& handler)
@@ -164,5 +164,3 @@ object connection::read_from_body(std::size_t len) {
 
   return blob;
 }
-
-} // namespace zest

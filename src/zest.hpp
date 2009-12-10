@@ -14,7 +14,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <flusspferd.hpp>
-#include "server.hpp"
+#include "http/server.hpp"
 
 namespace zest {
 
@@ -39,9 +39,9 @@ FLUSSPFERD_CLASS_DESCRIPTION(
   )
 {
 private:
-  friend class request_handler;
-  typedef boost::shared_ptr<server> server_ptr_t;
-  typedef boost::shared_ptr<request_handler> request_handler_t;
+  friend class http::request_handler;
+  typedef boost::shared_ptr<http::server> server_ptr_t;
+  typedef boost::shared_ptr<http::request_handler> request_handler_t;
 
   server_ptr_t _server;
   request_handler_t _req_handler;

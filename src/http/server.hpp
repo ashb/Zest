@@ -12,19 +12,17 @@
 #ifndef ZEST_SERVER_HPP
 #define ZEST_SERVER_HPP
 
-#include <boost/asio.hpp>
-#include <boost/shared_ptr.hpp>
-#include <string>
-#include <boost/noncopyable.hpp>
+#include "../types.hpp"
 #include "connection.hpp"
 #include "connection_manager.hpp"
 #include "request_handler.hpp"
 
+#include <string>
+#include <boost/asio.hpp>
+#include <boost/noncopyable.hpp>
 
-namespace zest {
-
-typedef boost::shared_ptr<boost::asio::io_service> shared_io_service;
-
+namespace zest { 
+namespace http {
 
 /// The HTTP server class itself.
 class server
@@ -75,6 +73,7 @@ private:
   std::string address_;
 };
 
+} // namespace http
 } // namespace zest
 
 #endif // ZEST_SERVER_HPP

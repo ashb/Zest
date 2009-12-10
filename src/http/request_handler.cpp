@@ -11,7 +11,8 @@
 #include "request_handler.hpp"
 #include "request.hpp"
 #include "reply.hpp"
-#include "zest.hpp"
+#include "../zest.hpp"
+
 #include <flusspferd/aliases.hpp>
 #include <flusspferd/create_on.hpp>
 #include <boost/foreach.hpp>
@@ -25,6 +26,7 @@
 using namespace flusspferd;
 using namespace flusspferd::aliases;
 using namespace zest;
+using namespace zest::http;
 
 namespace phoenix = boost::phoenix;
 namespace args = phoenix::arg_names;

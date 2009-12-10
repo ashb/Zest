@@ -54,8 +54,8 @@ zest_server::zest_server(object const &self, call_context &x)
   else
     addr = "0.0.0.0";
 
-  _req_handler.reset(new request_handler(*this));
-  _server.reset(new server(addr,port,*_req_handler, event_loop::get_default_io_service()));
+  _req_handler.reset(new http::request_handler(*this));
+  _server.reset(new http::server(addr,port,*_req_handler, event_loop::get_default_io_service()));
 }
 
 zest_server::~zest_server() {

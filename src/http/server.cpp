@@ -14,7 +14,7 @@
 
 namespace asio = boost::asio;
 
-namespace zest {
+using namespace zest::http;
 
 server::server(const std::string& address, const std::string& port,
     request_handler& handler, boost::shared_ptr<boost::asio::io_service> io_service)
@@ -85,5 +85,3 @@ void server::handle_stop()
   acceptor_.close();
   connection_manager_.stop_all();
 }
-
-} // namespace zest

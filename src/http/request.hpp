@@ -9,19 +9,28 @@
  *
  */
 
-#ifndef ZEST_HEADER_HPP
-#define ZEST_HEADER_HPP
+#ifndef ZEST_REQUEST_HPP
+#define ZEST_REQUEST_HPP
 
 #include <string>
+#include <vector>
+#include "header.hpp"
 
 namespace zest {
+namespace http {
 
-struct header
+/// A request received from a client.
+struct request
 {
-  std::string name;
-  std::string value;
+  std::string method;
+  std::string uri;
+  std::string query_string;
+  int http_version_major;
+  int http_version_minor;
+  std::vector<header> headers;
 };
 
+} // namespace http
 } // namespace zest
 
-#endif // ZEST_HEADER_HPP
+#endif // ZEST_REQUEST_HPP

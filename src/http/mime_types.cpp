@@ -15,6 +15,7 @@
 using namespace boost::algorithm;
 
 namespace zest {
+namespace http {
 namespace mime_types {
 
 struct mapping
@@ -95,4 +96,5 @@ std::string filename_to_type(const std::string& filename)
 }
 
 } // namespace mime_types
+} // namespace http
 } // namespace zest

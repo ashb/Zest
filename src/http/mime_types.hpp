@@ -9,26 +9,20 @@
  *
  */
 
-#ifndef ZEST_REQUEST_HPP
-#define ZEST_REQUEST_HPP
+#ifndef ZEST_MIME_TYPES_HPP
+#define ZEST_MIME_TYPES_HPP
 
 #include <string>
-#include <vector>
-#include "header.hpp"
 
 namespace zest {
+namespace http {
+namespace mime_types {
 
-/// A request received from a client.
-struct request
-{
-  std::string method;
-  std::string uri;
-  std::string query_string;
-  int http_version_major;
-  int http_version_minor;
-  std::vector<header> headers;
-};
+/// Convert a filename into a MIME type.
+std::string filename_to_type(const std::string& extension);
 
+} // namespace mime_types
+} // namespace http
 } // namespace zest
 
-#endif // ZEST_REQUEST_HPP
+#endif // ZEST_MIME_TYPES_HPP

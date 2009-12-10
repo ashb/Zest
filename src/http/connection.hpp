@@ -24,6 +24,7 @@
 #include "request_parser.hpp"
 
 namespace zest {
+namespace http {
 
 class connection_manager;
 
@@ -90,6 +91,7 @@ private:
 
 typedef boost::shared_ptr<connection> connection_ptr;
 
+} // namespace http
 } // namespace zest
 
 #endif // ZEST_CONNECTION_HPP

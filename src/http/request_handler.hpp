@@ -14,14 +14,17 @@
 
 #include <string>
 #include <boost/noncopyable.hpp>
-#include <flusspferd.hpp>
+#include <flusspferd/object.hpp>
 
 namespace zest {
+
+struct zest_server;
+
+namespace http {
 
 struct reply;
 struct request;
 struct connection;
-struct zest_server;
 
 /// The handler for all incoming requests.
 class request_handler
@@ -42,6 +45,7 @@ public:
 };
 
 
+} // namespace http
 } // namespace zest
 
 #endif // ZEST_REQUEST_HANDLER_HPP

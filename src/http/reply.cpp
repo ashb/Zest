@@ -18,6 +18,7 @@
 using namespace flusspferd;
 
 namespace zest {
+namespace http {
 
 namespace status_strings {
 
@@ -103,23 +104,6 @@ const char name_value_separator[] = { ':', ' ' };
 const char crlf[] = { '\r', '\n' };
 
 } // namespace misc_strings
-
-std::vector<boost::asio::const_buffer> reply::to_buffers()
-{
-  std::vector<boost::asio::const_buffer> buffers;
-  buffers.push_back(status_strings::to_buffer(status));
-  for (std::size_t i = 0; i < headers.size(); ++i)
-  {
-    header& h = headers[i];
-    buffers.push_back(boost::asio::buffer(h.name));
-    buffers.push_back(boost::asio::buffer(misc_strings::name_value_separator));
-    buffers.push_back(boost::asio::buffer(h.value));
-    buffers.push_back(boost::asio::buffer(misc_strings::crlf));
-  }
-  buffers.push_back(boost::asio::buffer(misc_strings::crlf));
-  buffers.push_back(boost::asio::buffer(content));
-  return buffers;
-}
 
 namespace stock_replies {
 
@@ -243,6 +227,28 @@ std::string to_string(reply::status_type status)
 
 } // namespace stock_replies
 
+} // namespace http
+} // namespace zest
+
+using namespace zest::http;
+
+std::vector<boost::asio::const_buffer> reply::to_buffers()
+{
+  std::vector<boost::asio::const_buffer> buffers;
+  buffers.push_back(status_strings::to_buffer(status));
+  for (std::size_t i = 0; i < headers.size(); ++i)
+  {
+    header& h = headers[i];
+    buffers.push_back(boost::asio::buffer(h.name));
+    buffers.push_back(boost::asio::buffer(misc_strings::name_value_separator));
+    buffers.push_back(boost::asio::buffer(h.value));
+    buffers.push_back(boost::asio::buffer(misc_strings::crlf));
+  }
+  buffers.push_back(boost::asio::buffer(misc_strings::crlf));
+  buffers.push_back(boost::asio::buffer(content));
+  return buffers;
+}
+
 reply reply::stock_reply(reply::status_type status)
 {
   reply rep;
@@ -257,7 +263,7 @@ reply reply::stock_reply(reply::status_type status)
 }
 
 void reply::body_appender(value &v) {
-  binary *b;
+  binary *b = NULL;
   if (v.is_object()) {
     object chunk = v.get_object();
 
@@ -276,5 +282,3 @@ void reply::body_appender(value &v) {
   binary::vector_type const &vec = b->get_const_data();
   content.append(vec.begin(), vec.end());
 }
-
-} // namespace zest

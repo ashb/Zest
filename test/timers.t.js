@@ -1,24 +1,40 @@
 var assert = require('test').asserts;
 const z = require('zest');
 
-exports.test_setTimeout = function() {
-  var fired = false;
-  var id = z.asio.setTimeout(function(){ fired = true }, 1000);
+exports.est_setTimeout = function() {
+  z.asio.reset();
+
+  var fired = false, arg, id;
+
+  id = z.asio.setTimeout(function(arg_in){
+    fired = true;
+    arg = arg_in
+  }, 0, "arg in");
 
   assert.same(typeof id, "number", "setTimeout returns a number");
 
-  print(z.asio.run_one());
+  assert.same(false, fired, "Timer not fired");
+  assert.diag(z.asio.run_one());
+
   assert.same(true, fired, "Timer fired");
+  assert.same("arg in", arg, "Args passed through");
 }
 
-exports.est_MultipleTimers = function() {
+exports.test_MultipleTimers = function() {
+  z.asio.reset();
+
   var fired1 = false, fired2 = false;
   z.asio.setTimeout(function(){ fired1 = true },10);
-  z.asio.setTimeout(function(){ fired2 = true },10);
+  z.asio.setTimeout(function(){ fired2 = true },5);
 
-  z.asio.run();
-  assert.same(true, fired1, "Timer 1 fired");
+  assert.diag(z.asio.run_one());
+  assert.same(false, fired1, "Timer 1 not yet fired");
   assert.same(true, fired2, "Timer 2 fired");
+  assert.diag(z.asio.run_one());
+  assert.same(true, fired1, "Timer 1 now fired");
+
+  for (i in require.module_cache)
+    delete require.module_cache[i];
 }
 
 exports.est_setTimeout = function() {

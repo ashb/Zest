@@ -31,6 +31,7 @@ FLUSSPFERD_CLASS_DESCRIPTION(
       ("run_one", bind, run_one)
       ("poll", bind, poll)
       ("poll_one", bind, poll_one)
+      ("reset", bind, reset)
 
       ("setTimeout", bind, set_timeout)
       ("clearTimeout", bind, clear_timeout)
@@ -42,17 +43,13 @@ protected:
                  public boost::intrusive::bs_set_base_hook<>
   {
     int id;
-    flusspferd::root_object &cb;
-    flusspferd::arguments &args;
-
-    // Bit of anbomination, but we keep ourselves alive!
-    boost::shared_ptr<timer> life_guard_;
-
+    flusspferd::root_object cb;
+    flusspferd::arguments args;
 
     explicit timer(boost::asio::io_service &svc,
                    boost::asio::deadline_timer::duration_type td, 
                    int id,
-                   flusspferd::root_object &cb, flusspferd::arguments &args);
+                   flusspferd::object &cb, flusspferd::arguments &args);
 
     friend bool priority_order(timer const &a, timer const &b) {
       return a.expires_at() < b.expires_at();
@@ -64,6 +61,7 @@ protected:
     ~timer();
   };
 
+  static void clear_timer(timer *t);
 
   shared_io_service io_service_ptr_;
 
@@ -72,6 +70,7 @@ protected:
   int timer_counter_;
 
   void on_timer(boost::system::error_code const &e, boost::shared_ptr<timer> t);
+  void on_timer_ref(boost::system::error_code const &e, timer &t);
   void simple_timeout();
 
 public:
@@ -83,6 +82,8 @@ public:
   int run_one();
   int poll();
   int poll_one();
+
+  void reset();
 
   void set_timeout(flusspferd::call_context &x);
   void clear_timeout(int timer_id) {}

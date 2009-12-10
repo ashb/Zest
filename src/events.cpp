@@ -6,6 +6,7 @@
 #include <boost/spirit/include/phoenix.hpp>
 #include <boost/bind.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <iostream>
 
 using namespace flusspferd;
 using namespace zest;
@@ -46,15 +47,24 @@ event_loop::event_loop(object const &proto)
     timer_counter_(0)
 { }
 
-event_loop::~event_loop()
-{ }
+void event_loop::clear_timer(event_loop::timer *t) {
+  std::cout << "clear_timer\n";
+  t->cancel();
+}
 
+event_loop::~event_loop()
+{
+  std::cout << "~event_loop\n";
+}
+
+// The Default io_service to share between things
 shared_io_service event_loop::get_default_io_service() {
   static boost::weak_ptr<boost::asio::io_service> svc;
 
   shared_io_service ptr = svc.lock();
   if (!ptr) {
     // Not created or gone out of scope. Re-create
+    std::cout << "creating shared_io_service\n";
     ptr = shared_io_service(new boost::asio::io_service());
     svc = ptr;
   }
@@ -78,17 +88,10 @@ int event_loop::poll_one() {
   return io_service_ptr_->poll_one();
 }
 
-
-void on_timer(boost::system::error_code const &e) {
-  std::cout << "on_timer: " << e;
-  if (e == boost::asio::error::operation_aborted) {
-    std::cout << " - canelled\n";
-    return;
-  }
-  std::cout << " - firing\n";
+void event_loop::reset() {
+  return io_service_ptr_->reset();
 }
 
-#include <iostream>
 // func[, delay[, arg...]] -> Number
 void event_loop::set_timeout(call_context &x) {
   if (x.arg.size() < 1) {
@@ -120,45 +123,27 @@ void event_loop::set_timeout(call_context &x) {
     }
   }
 
-  {
   boost::shared_ptr<timer> t(new timer(*io_service_ptr_, delay, ++timer_counter_, cb, args));
-  t->life_guard_ = t;
   timers_.insert(*t);
   t->async_wait(boost::bind(&event_loop::on_timer, this, boost::asio::placeholders::error, t));
   x.result = t->id;
-  }
-  //io_service_ptr_->run_one();
-  //svc.poll();
 }
 
-
 void event_loop::on_timer(boost::system::error_code const &e, boost::shared_ptr<timer> t) {
-  std::cout << "on_timer: " << e << '\n';
-  t->life_guard_.reset();
   if (e == boost::asio::error::operation_aborted) {
-    std::cout << " - canelled\n";
     return;
   }
-  std::cout << " - firing\n";
 
   try {
-    t->cb.call();//t->args);
-  }
-  catch (::flusspferd::exception &e) {
-    std::cout << "hippo::e" << e.what() << "\n";
-  }
-  catch (std::exception &e) {
-    std::cout << "std::e" << e.what() << "\n";
+    t->cb.call(t->args);
   }
   catch (...) {
-    std::cout << "...\n";
   }
-  std::cout << " - fired\n";
   timers_.erase(*t);
 }
 
 event_loop::timer::timer(boost::asio::io_service &svc, duration_type td, 
-        int id_, flusspferd::root_object &cb_, flusspferd::arguments &args_
+        int id_, flusspferd::object &cb_, flusspferd::arguments &args_
 ) : boost::asio::deadline_timer(svc, td),
     id(id_),
     cb(cb_),
@@ -167,7 +152,5 @@ event_loop::timer::timer(boost::asio::io_service &svc, duration_type td,
 
 
 event_loop::timer::~timer()
-{
-  std::cout << "~timer\n";
-}
+{ }
 

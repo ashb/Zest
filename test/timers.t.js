@@ -36,13 +36,38 @@ exports.test_MultipleTimers = function() {
   z.asio.reset();
 }
 
-exports.est_clearTimeout = function() {
+exports.test_clearTimeout = function() {
 
   var fired = false;
   var id = z.asio.setTimeout(function(){ fired = true });
   z.asio.clearTimeout(id);
   z.asio.poll();
   assert.same(false, fired, "Timer cancelled before it fired");
+
+  z.asio.reset();
+}
+
+exports.test_setInterval = function() {
+
+  var fired = 0, id;
+
+  id = z.asio.setInterval(function(){
+    fired++;
+  }, 1);
+
+  assert.same(typeof id, "number", "setInterval returns a number");
+
+  assert.same(0, fired, "Timer not fired");
+  assert.diag(z.asio.poll_one());
+
+  assert.same(1, fired, "Timer fired once");
+  assert.diag(z.asio.poll_one());
+  assert.diag(z.asio.poll_one());
+  assert.same(3, fired, "Timer fired thrice");
+
+  z.asio.clearInterval(id);
+  assert.diag(z.asio.poll_one());
+  assert.same(3, fired, "Interval timer cancelled");
 
   z.asio.reset();
 }

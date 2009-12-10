@@ -12,6 +12,7 @@
 
 #include <flusspferd/class_description.hpp>
 #include <boost/system/error_code.hpp>
+#include <boost/enable_shared_from_this.hpp>
 #include <boost/intrusive/treap_set.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 
@@ -20,7 +21,6 @@ namespace zest {
 
 // Setup setTimeout et al., default asio instace and what have you
 void setup_event_loop(flusspferd::object exports, flusspferd::object require);
-
 
 FLUSSPFERD_CLASS_DESCRIPTION(
   event_loop,
@@ -34,22 +34,27 @@ FLUSSPFERD_CLASS_DESCRIPTION(
       ("reset", bind, reset)
 
       ("setTimeout", bind, set_timeout)
+      ("setInterval", bind, set_interval)
       ("clearTimeout", bind, clear_timeout)
+      ("clearInterval", alias, "clearTimeout")
     )
   )
 {
 protected:
   struct timer : public boost::asio::deadline_timer,
-                 public boost::intrusive::bs_set_base_hook<>
+                 public boost::intrusive::bs_set_base_hook<>,
+                 public boost::enable_shared_from_this<timer>
   {
     int id;
     flusspferd::object cb;
     flusspferd::arguments args;
+    static boost::asio::deadline_timer::duration_type zero_duration;
+    boost::asio::deadline_timer::duration_type repeat;
 
     explicit timer(boost::asio::io_service &svc,
-                   boost::asio::deadline_timer::duration_type td, 
-                   int id,
-                   flusspferd::object &cb, flusspferd::arguments &args);
+                   boost::asio::deadline_timer::duration_type td, int id,
+                   flusspferd::object &cb, flusspferd::arguments &args,
+                   bool repeat=false);
 
     friend bool priority_order(timer const &a, timer const &b) {
       return a.expires_at() < b.expires_at();
@@ -58,9 +63,9 @@ protected:
       return a.id < b.id;
     }
 
-    ~timer();
-  };
+    void bind(event_loop *);
 
+  };
 
   shared_io_service io_service_ptr_;
 
@@ -72,6 +77,8 @@ protected:
   void on_timer(boost::system::error_code const &e, boost::shared_ptr<timer> t);
 
   void trace(flusspferd::tracer &trc);
+
+  void setup_timer(flusspferd::call_context &x, bool repeat);
 public:
   event_loop(flusspferd::object const &o, flusspferd::call_context &x);
   event_loop(flusspferd::object const &o);
@@ -84,9 +91,10 @@ public:
 
   void reset();
 
-  void set_timeout(flusspferd::call_context &x);
-  void clear_timeout(int timer_id) {}
+  void set_timeout(flusspferd::call_context &x) { setup_timer(x, false); }
+  void set_interval(flusspferd::call_context &x) { setup_timer(x, true); }
 
+  void clear_timeout(int timer_id);
 
   // Used in default ctor forms for Zest et al.
   static shared_io_service get_default_io_service();

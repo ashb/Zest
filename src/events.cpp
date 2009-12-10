@@ -4,7 +4,6 @@
 
 #include <flusspferd/create_on.hpp>
 #include <boost/spirit/include/phoenix.hpp>
-#include <boost/bind.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/foreach.hpp>
 
@@ -98,8 +97,7 @@ void event_loop::reset() {
   return io_service_ptr_->reset();
 }
 
-// func[, delay[, arg...]] -> Number
-void event_loop::set_timeout(call_context &x) {
+void event_loop::setup_timer(call_context &x, bool repeat) {
   if (x.arg.size() < 1) {
     // 0 is a special timerId for us. it means we did nothing!
     x.result = 0;
@@ -129,10 +127,26 @@ void event_loop::set_timeout(call_context &x) {
     }
   }
 
-  boost::shared_ptr<timer> t(new timer(*io_service_ptr_, delay, ++timer_counter_, cb, args));
+  boost::shared_ptr<timer> t(new timer(*io_service_ptr_, delay, ++timer_counter_, cb, args, repeat));
   timers_.insert(*t);
-  t->async_wait(boost::bind(&event_loop::on_timer, this, boost::asio::placeholders::error, t));
+
+  t->bind(this);
+
   x.result = t->id;
+}
+
+void event_loop::clear_timeout(int id) {
+  // Hmmm how the hell do you use the key comparison form!
+  //boost::function<void (timer*)> disposer(bind(&timer::cancel, args::arg1));
+  //timers_.erase_and_dispose(id, timer_treap::key_compare(), disposer);
+
+  for(timer_treap::iterator i = timers_.top(); i != timers_.end(); ++i) {
+    if (i->id == id) {
+      timers_.erase(i);
+      i->cancel();
+      return;
+    }
+  }
 }
 
 void event_loop::on_timer(boost::system::error_code const &e, boost::shared_ptr<timer> t) {
@@ -140,23 +154,42 @@ void event_loop::on_timer(boost::system::error_code const &e, boost::shared_ptr<
     return;
   }
 
+  // Erase (and re-insert if we need to so the heap is right)
+  timers_.erase(*t);
+
+  // In browsers (or at least Safari) setInterval is based on when it last
+  // fired, not when it last compelted.
+  if (t->repeat != timer::zero_duration) {
+    t->expires_from_now(t->repeat);
+    t->bind(this);
+    timers_.insert(*t);
+  }
+
   try {
     t->cb.call(t->args);
   }
   catch (...) {
   }
-  timers_.erase(*t);
 }
 
+/* static */
+boost::asio::deadline_timer::duration_type event_loop::timer::zero_duration;
+
 event_loop::timer::timer(boost::asio::io_service &svc, duration_type td, 
-        int id_, flusspferd::object &cb_, flusspferd::arguments &args_
+        int id_, flusspferd::object &cb_, flusspferd::arguments &args_, bool r
 ) : boost::asio::deadline_timer(svc, td),
     id(id_),
     cb(cb_),
-    args(args_)
+    args(args_),
+    repeat(r ? td : duration_type())
 { }
 
+void event_loop::timer::bind(event_loop *loop) {
 
-event_loop::timer::~timer()
-{ }
+  boost::shared_ptr<event_loop::timer> t = shared_from_this();
+  boost::function<void( boost::system::error_code const &)> f(
+    phoenix::bind(&event_loop::on_timer, loop, args::arg1, val(t))
+  );
+  async_wait(f);
+}
 

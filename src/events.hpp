@@ -43,7 +43,7 @@ protected:
                  public boost::intrusive::bs_set_base_hook<>
   {
     int id;
-    flusspferd::root_object cb;
+    flusspferd::object cb;
     flusspferd::arguments args;
 
     explicit timer(boost::asio::io_service &svc,
@@ -61,18 +61,17 @@ protected:
     ~timer();
   };
 
-  static void clear_timer(timer *t);
 
   shared_io_service io_service_ptr_;
 
+  // treap - not quite a tree, not quite a heap
   typedef boost::intrusive::treap_set<timer> timer_treap;
   timer_treap timers_;
   int timer_counter_;
 
   void on_timer(boost::system::error_code const &e, boost::shared_ptr<timer> t);
-  void on_timer_ref(boost::system::error_code const &e, timer &t);
-  void simple_timeout();
 
+  void trace(flusspferd::tracer &trc);
 public:
   event_loop(flusspferd::object const &o, flusspferd::call_context &x);
   event_loop(flusspferd::object const &o);

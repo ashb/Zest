@@ -6,13 +6,17 @@
 #include <boost/spirit/include/phoenix.hpp>
 #include <boost/bind.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/foreach.hpp>
+
 #include <iostream>
 
 using namespace flusspferd;
 using namespace zest;
 
 using namespace boost::posix_time;
+using boost::phoenix::val;
 namespace phoenix = boost::phoenix;
+namespace args = boost::phoenix::arg_names;
 
 namespace zest {
 
@@ -35,26 +39,28 @@ boost::asio::io_service svc;
 // JS ctor
 event_loop::event_loop(object const &proto, call_context &x)
   : base_type(proto),
-    //io_service_ptr_(new boost::asio::io_service()),
+    io_service_ptr_(new boost::asio::io_service()),
     timer_counter_(0)
 { }
 
 // C++ ctor
 event_loop::event_loop(object const &proto)
   : base_type(proto),
-    //io_service_ptr_(get_default_io_service()),
-    io_service_ptr_(new boost::asio::io_service()),
+    io_service_ptr_(get_default_io_service()),
     timer_counter_(0)
 { }
 
-void event_loop::clear_timer(event_loop::timer *t) {
-  std::cout << "clear_timer\n";
-  t->cancel();
-}
-
 event_loop::~event_loop()
-{
-  std::cout << "~event_loop\n";
+{ }
+
+void event_loop::trace(tracer &trc) {
+
+  BOOST_FOREACH(timer &t, timers_) {
+    trc("timer.cb", t.cb);
+    for( arguments::iterator i = t.args.begin(), e = t.args.end(); i != e; ++i) {
+      trc("timer.args[]", *i);
+    }
+  }
 }
 
 // The Default io_service to share between things
@@ -119,7 +125,7 @@ void event_loop::set_timeout(call_context &x) {
       delay = milliseconds(v.to_integral_number(63, false));
 
     for (; iter != x.arg.end(); ++iter) {
-      args.push_root(*iter);
+      args.push_back(*iter);
     }
   }
 

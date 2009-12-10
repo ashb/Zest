@@ -5,16 +5,22 @@
  * http://www.boost.org/LICENSE_1_0.txt)
  *
  */
+
 #include "zest.hpp"
+#include "events.hpp"
 #include <boost/lexical_cast.hpp>
+#include <boost/ref.hpp>
 #include <iostream>
 
 using namespace flusspferd;
 using namespace zest;
 
-FLUSSPFERD_LOADER_SIMPLE(exports) {
+FLUSSPFERD_LOADER(exports, context) {
   load_class<zest_server>(exports);
+
+  setup_event_loop(exports, context.get_property_object("require"));
 }
+
 
 zest_server::zest_server(object const &self, call_context &x)
   : base_type(self)
@@ -49,7 +55,7 @@ zest_server::zest_server(object const &self, call_context &x)
     addr = "0.0.0.0";
 
   _req_handler.reset(new request_handler(*this));
-  _server.reset(new server(addr,port,*_req_handler));
+  _server.reset(new server(addr,port,*_req_handler, event_loop::get_default_io_service()));
 }
 
 zest_server::~zest_server() {

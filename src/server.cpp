@@ -17,16 +17,16 @@ namespace asio = boost::asio;
 namespace zest {
 
 server::server(const std::string& address, const std::string& port,
-    request_handler& handler)
+    request_handler& handler, boost::shared_ptr<boost::asio::io_service> io_service)
   : request_handler_(handler),
-    io_service_(),
-    acceptor_(io_service_),
+    io_service_(io_service),
+    acceptor_(*io_service_),
     connection_manager_(),
-    new_connection_(new connection(io_service_,
+    new_connection_(new connection(*io_service_,
           connection_manager_, request_handler_))
 {
   // Open the acceptor with the option to reuse the address (i.e. SO_REUSEADDR).
-  asio::ip::tcp::resolver resolver(io_service_);
+  asio::ip::tcp::resolver resolver(*io_service_);
   asio::ip::tcp::resolver::query query(address, port);
   asio::ip::tcp::endpoint endpoint = *resolver.resolve(query);
 
@@ -54,14 +54,14 @@ void server::run()
   // have finished. While the server is running, there is always at least one
   // asynchronous operation outstanding: the asynchronous accept call waiting
   // for new incoming connections.
-  io_service_.run();
+  io_service_->run();
 }
 
 void server::stop()
 {
   // Post a call to the stop function so that server::stop() is safe to call
   // from any thread.
-  io_service_.post(boost::bind(&server::handle_stop, this));
+  io_service_->post(boost::bind(&server::handle_stop, this));
 }
 
 void server::handle_accept(const boost::system::error_code& e)
@@ -69,7 +69,7 @@ void server::handle_accept(const boost::system::error_code& e)
   if (!e)
   {
     connection_manager_.start(new_connection_);
-    new_connection_.reset(new connection(io_service_,
+    new_connection_.reset(new connection(*io_service_,
           connection_manager_, request_handler_));
     acceptor_.async_accept(new_connection_->socket(),
         boost::bind(&server::handle_accept, this,

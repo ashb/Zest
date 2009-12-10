@@ -10,6 +10,7 @@ var server = z.Zest({
     req.jsgi.errors.print(blob.decodeToString());*/
 
     req.jsgi.errors.print("*hello");
+    server.stop();
     return {
       status: 200,
       body: ["I'm content from " + module.uri],

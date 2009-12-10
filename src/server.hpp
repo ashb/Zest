@@ -13,6 +13,7 @@
 #define ZEST_SERVER_HPP
 
 #include <boost/asio.hpp>
+#include <boost/shared_ptr.hpp>
 #include <string>
 #include <boost/noncopyable.hpp>
 #include "connection.hpp"
@@ -22,6 +23,9 @@
 
 namespace zest {
 
+typedef boost::shared_ptr<boost::asio::io_service> shared_io_service;
+
+
 /// The HTTP server class itself.
 class server
   : private boost::noncopyable
@@ -30,7 +34,7 @@ public:
   /// Construct the server to listen on the specified TCP address and port, and
   /// serve up files from the given directory.
   explicit server(const std::string& address, const std::string& port,
-      request_handler& handler);
+      request_handler& handler, shared_io_service io_service);
 
   /// Run the server's io_service loop.
   void run();
@@ -55,7 +59,7 @@ private:
   request_handler &request_handler_;
 
   /// The io_service used to perform asynchronous operations.
-  boost::asio::io_service io_service_;
+  shared_io_service io_service_;
 
   /// Acceptor used to listen for incoming connections.
   boost::asio::ip::tcp::acceptor acceptor_;

@@ -18,6 +18,10 @@
 
 namespace zest {
 
+// Setup setTimeout et al.
+void setup_evented();
+
+
 class jsgi_request_handler;
 
 FLUSSPFERD_CLASS_DESCRIPTION(

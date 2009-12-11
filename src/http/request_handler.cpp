@@ -86,7 +86,7 @@ object request_handler::build_jsgi_env(
 
   // env.headers
   object headers = create<object>(
-    _name = "header",
+    _name = "headers",
     _container = env,
     _attributes = no_property_flag
   );

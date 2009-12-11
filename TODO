@@ -1,0 +1,8 @@
+
+- Zest#stop
+  o needs to take a force (Boolean) parameter saying wether we should force
+    close all connections or if we should just close the acceptor and wait for
+    clients to finish manually.
+
+- new Zest() should also accept just a handler function (instead of full
+  options dict)

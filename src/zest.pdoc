@@ -1,0 +1,124 @@
+// vim: ft=javascript:
+
+/**
+ *  == Modules ==
+ *
+ *  External modules
+ **/
+
+
+/** section: Modules
+ * zest
+ *
+ *  HTTP Server and other Async IO and event services.
+ *
+ *  This module contains a JSGI HTTP server; [[zest.Zest]]; and an event
+ *  reactor; [[zest.Reactor]].
+ *
+ *  ##### Example #
+ *
+ *      var z = require('zest');
+ *      
+ *      // Create a server that simply sends back "Hello World!"
+ *      var server = new z.Zest({handler: function(req) {
+ *        var body = ["Hello "];
+ *
+ *        if (req.headers["user-agent"])
+ *          body.push(req.headers["user-agent"]);
+ *        else
+ *          body.push("world!");
+ *
+ *        return {
+ *          status: 200,
+ *          headers: { "content-type": "text/plain"},
+ *          body: body
+ *        };
+ *      }});
+ *      // Stop the server after 30 seconds
+ *      z.reactor.setTimeout(server.stop.bind(server), 30*1000);
+ *
+ *      server.start();
+ **/
+
+/**
+ *  class zest.Zest
+ *
+ *  The Zest JSGI/HTTP server.
+ *
+ *  ##### JSGI #
+ *
+ *  The primiary function of this module is as a webserver that natively runs
+ *  [JSGI 0.3] apps. Below is a quick introduction JSGI -- for the full
+ *  treatment please read the specification and see [[zest here]] for a brief
+ *  example.
+ *
+ *  A (synchronous) JSGI is defined as a function taking a single parameter
+ *  `request` and returning an object with three keys:
+ *
+ *  - status (Number): The http status code
+ *  - headers (Array): an array of headers.
+ *  - body (?): Something which responds to `forEach`.
+ *
+ *  The keys for `headers` should be in lower-case. They might work in
+ *  Mixed-Case but this is not portable and will likely not work with all
+ *  middleware. Multiple headers of the same name can be sent by returning an
+ *  array of strings.
+ *
+ *  The `body` object should respond to a `forEach` method and optionally to
+ *  `close` that will called similar as follows:
+ *
+ *      body.forEach(writerFn);
+ *      if (typeof body.close == "function")
+ *        body.close(writerFn);
+ *
+ *  This means for simple cases your response body is simply an array of binary
+ *  data. As an extension to the JSGI (draft) specification, Zest also accepts
+ *  strings which are UTF-8 encoded before being sent out.
+ *
+ *  [JSGI 0.3]: http://wiki.commonjs.org/wiki/JSGI/Level0/A/Draft2 "JSGI 0.3 Draft 2"
+ **/
+
+/**
+ *  zest.Zest#port -> Number
+ *
+ *  Port number listening on.
+ **/
+
+/**
+ *  zest.Zest#address -> String
+ *
+ *  Address to which we have bound.
+ **/
+
+/**
+ *  new zest.Zest({handler, port, address})
+ *  - handler (Function): JSGI application function
+ *  - port (Number | String): port to listen on. Defaults to port 3000
+ *  - address (String): address to bind on. Defaults to "0.0.0.0" (all
+ *                      interfaces)
+ *
+ *  Create a new Zest HTTP server listening on `port` using the default
+ *  [[zest.reactor]].
+ *
+ *  `port` can be specified as a string in which case it will be resovled
+ *  against known service names.
+ **/
+
+/**
+ *  zest.Zest#start() -> Undefined
+ *
+ *  Start the server up by calling the [[zest.Reactor#run reactor's run]]
+ *  method.
+ *
+ *  If you wish to manually control the reactor do not call this method.
+ **/
+
+/**
+ *  zest.Zest#stop() -> Undefined
+ *
+ *  Shutdown the listening socket and close all open connections, allowing the
+ *  `start()` call to return.
+ *
+ *  Currently there is no way to stop accepting new connections and let client
+ *  connections finish gracefully. This will be added soon.
+ **/

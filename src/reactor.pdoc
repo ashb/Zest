@@ -1,0 +1,128 @@
+// vim: ft=javascript:
+
+/** 
+ *  class zest.Reactor
+ *
+ *  Async IO and timer dispatcher.
+ *
+ *  This class implements an event loop or [reactor]. When the `zest` module is
+ *  required an initial reactor will be created for you: [[zest.reactor]]. You
+ *  can create new reactor instances if you so wish, but they will not
+ *  cooperate together - each one will need to be manually serviced vis
+ *  [[zest.Reactor#poll_one]] or a similar method.
+ *
+ *  [reactor]: http://en.wikipedia.org/wiki/Reactor_pattern
+ **/
+
+/**
+ *  zest.reactor -> zest.Reactor
+ *
+ *  The default event reactor instance.
+ *
+ *  Created automatically when the module is loaded.
+ **/
+
+/**
+ *  zest.Reactor#setTimeout(cb[, delay[, args...]]) -> Number
+ *  - cb (Function): callback to schedule
+ *  - delay (Number): delay in milliseconds
+ *  - args (?): extra arguments
+ *
+ *  Schedule a callback to happen after a given delay. This behaves similarly
+ *  to the browser. Extra arguments are passed through to the callback when it
+ *  is invoked.
+ *
+ *  Returns an id which can be used to cancel the timer before it fires by
+ *  passing it to [[zest.Reactor#cancelTimeout]].
+ *
+ *  For the timer to fire the reactor must be running, either through a running
+ *  [[zest.Zest]] server or by manually calling [[zest.Reactor#run]] or similar
+ *  method.
+ **/
+
+/** 
+ *  zest.Reactor#cancelTimeout(id) -> Undefined
+ *
+ *  Cancel a previous timer setup through [[zest.Reactor#setTimeout]].
+ *
+ *  It is not an error to attempt to cancel a timer more than once -- this
+ *  function will not throw an error.
+ **/
+
+/**
+ *  zest.Reactor#setInterval(cb[, delay[, args...]]) -> Number
+ *  - cb (Function): callback to schedule
+ *  - delay (Number): delay in milliseconds
+ *  - args (?): extra arguments
+ *
+ *  Schedule a callback to happen repeatedly after a given delay. Subsequent
+ *  timers are enqueued based on the when the previous timer fired, not based
+ *  on when the callback completes. This behaves similarly to the browser.
+ *  Extra arguments are passed through to the callback when it is invoked.
+ *
+ *  Returns an id which can be used to cancel the timer before it fires by
+ *  passing it to [[zest.Reactor#cancelInterval]].
+ *
+ *  For the timer to fire the reactor must be running, either through a running
+ *  [[zest.Zest]] server or by manually calling [[zest.Reactor#run]] or similar
+ *  method.
+ **/
+
+/**
+ *  zest.Reactor#run() -> Undefined
+ *
+ *  Run the reactor. Control will not return from this function until there is
+ *  no more work to be done, or until [[zest.Reactor#stop]] is manually called.
+ *
+ *  If the reactor stops due to running out of work or due to stop being
+ *  called, then [[zest.Reactor#reset]] must be called before you can call run
+ *  again. If an exception bubbles up however, this is not needed, which means
+ *  you can do something like the following:
+ *
+ *      while (1) {
+ *        try {
+ *          reactor.run();
+ *        }
+ *        catch (e) {
+ *          handleErro(e);
+ *        }
+ *      }
+ **/
+
+/**
+ *  zest.Reactor#run_one() -> Undefined
+ *
+ *  Run the reactor until the next event is processed or until stopped.
+ **/
+
+/**
+ *  zest.Reactor#poll() -> Undefined
+ *
+ *  Process all pending events, if there are any, then return control.
+ **/
+
+/**
+ *  zest.Reactor#poll_one() -> Undefined
+ *
+ *  Process the first pending event, if there is one, then return control.
+ **/
+
+/**
+ *  zest.Reactor#stop() -> Undefined
+ *
+ *  Stop the reactor's event loop. This method does not block, but instead
+ *  simply signals `run` (and `run_one`) to return as soon as possible.
+ *
+ *  Subsequent calls to [[zest.Reactor#run]] [[zest.Reactor#run_one]],
+ *  [[zest.Reactor#poll]] and [[zest.Reactor#poll_one]] will return immediately
+ *  until [[zest.Reactor#reset]] is called.
+ **/
+
+/**
+ *  zest.Reactor#reset() -> Undefined
+ *
+ *  Reset the reactor in preparation for subsequent event processing.
+ *
+ *  This function must not be called while there are any unfinished calls to
+ *  the run or poll functions.
+ **/

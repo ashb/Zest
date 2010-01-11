@@ -1,6 +1,3 @@
-/build
-/obj
 *.swp
 *~
-/Makefile
-/*.make
+/build/

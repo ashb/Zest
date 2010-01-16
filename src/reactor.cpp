@@ -69,7 +69,6 @@ shared_io_service reactor::get_default_io_service() {
   shared_io_service ptr = svc.lock();
   if (!ptr) {
     // Not created or gone out of scope. Re-create
-    std::cout << "creating shared_io_service\n";
     ptr = shared_io_service(new boost::asio::io_service());
     svc = ptr;
   }
@@ -167,6 +166,18 @@ void reactor::on_timer(boost::system::error_code const &e, boost::shared_ptr<tim
 
   try {
     t->cb.call(t->args);
+  }
+  catch (exception &e) {
+    std::cerr << "ERROR: " << e.what() << '\n';
+    object o;
+    if (e.val().is_object() &&
+        (o = e.val().to_object()).has_property("stack"))
+    {
+      std::cerr << o.get_property("stack").to_std_string() << '\n';
+    }
+  }
+  catch (std::exception &e ) {
+    std::cerr << "ERROR: " << e.what() << '\n';
   }
   catch (...) {
   }

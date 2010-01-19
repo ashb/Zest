@@ -50,7 +50,11 @@ reactor::reactor(object const &proto)
 { }
 
 reactor::~reactor()
-{ }
+{
+  BOOST_FOREACH(timer &t, timers_) {
+    t.cancel();
+  }
+}
 
 void reactor::trace(tracer &trc) {
 
